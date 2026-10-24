@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -28,17 +28,17 @@ export default function Footer() {
                 Doc2Action
               </span>
             </Link>
-            <p className="text-slate-400 leading-relaxed text-xs max-w-sm">
-              Transforming administrative notices, memos, and circulars into actionable, traceable checklists with source-cited tasks and deadlines.
+            <p className="text-slate-400 leading-relaxed text-xs max-w-sm font-normal">
+              Transforming administrative circulars and institutional notices into actionable, source-cited task checklists with full paragraph traceability.
             </p>
           </div>
 
           {/* Product links */}
           <div>
-            <h4 className="font-semibold text-white text-xs tracking-wider uppercase mb-3.5">
+            <h4 className="font-bold text-slate-300 text-[11px] tracking-wider uppercase mb-4">
               Product
             </h4>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2.5 text-[13px]">
               <li>
                 <Link href="/app" className="hover:text-white transition-colors">
                   Start New Analysis
@@ -59,10 +59,10 @@ export default function Footer() {
 
           {/* How It Works links */}
           <div>
-            <h4 className="font-semibold text-white text-xs tracking-wider uppercase mb-3.5">
-              How It Works
+            <h4 className="font-bold text-slate-300 text-[11px] tracking-wider uppercase mb-4">
+              Architecture &amp; Flow
             </h4>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2.5 text-[13px]">
               <li>
                 <Link href="/#how-it-works" className="hover:text-white transition-colors">
                   How It Works
@@ -75,17 +75,17 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/methodology#indexing" className="hover:text-white transition-colors">
-                  Deterministic Paragraph Indexing (P1–P5)
+                  Paragraph Indexing (P1–P5)
                 </Link>
               </li>
               <li>
                 <Link href="/methodology#extraction" className="hover:text-white transition-colors">
-                  Paragraph-Constrained Task Extraction
+                  Task Extraction Pipeline
                 </Link>
               </li>
               <li>
                 <Link href="/methodology#omissions" className="hover:text-white transition-colors">
-                  Explicit Omission &amp; Absence Handling
+                  Omission &amp; Absence Handling
                 </Link>
               </li>
             </ul>
@@ -93,31 +93,31 @@ export default function Footer() {
 
           {/* Technology & Team */}
           <div>
-            <h4 className="font-semibold text-white text-xs tracking-wider uppercase mb-3.5">
-              Team 10 — AI Document to Action Agent
+            <h4 className="font-bold text-slate-300 text-[11px] tracking-wider uppercase mb-4">
+              Team 10 — Project
             </h4>
-            <p className="text-slate-400 leading-relaxed text-xs mb-3">
+            <p className="text-slate-400 leading-relaxed text-xs mb-3 font-normal">
               Powered by Next.js &amp; Gemini 2.5 Flash
             </p>
             <Link
               href="/team"
-              className="inline-flex items-center text-xs text-blue-400 hover:text-blue-300 font-medium"
+              className="inline-flex items-center text-xs text-blue-400 hover:text-blue-300 font-semibold"
             >
               Meet the Team &rarr;
             </Link>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between text-slate-500 text-xs gap-4">
+        <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between text-slate-400 text-xs gap-4">
           <p>© 2026 Doc2Action. Built for academic &amp; administrative productivity.</p>
           <div className="flex items-center gap-6">
-            <Link href="/#features" className="hover:text-slate-400 transition-colors">
-              Features
+            <Link href="/#features" className="hover:text-white transition-colors">
+              Core Features
             </Link>
-            <Link href="/#problem" className="hover:text-slate-400 transition-colors">
+            <Link href="/#problem" className="hover:text-white transition-colors">
               The Problem
             </Link>
-            <Link href="/app" className="hover:text-slate-400 transition-colors">
+            <Link href="/app" className="hover:text-white transition-colors">
               Workspace
             </Link>
           </div>

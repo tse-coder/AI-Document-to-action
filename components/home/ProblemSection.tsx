@@ -1,27 +1,26 @@
 import Image from "next/image";
-import Link from "next/link";
 
 export default function ProblemSection() {
   return (
-    <section className="py-20 sm:py-28 bg-white border-t border-slate-200/80">
+    <section id="problem" className="py-20 sm:py-28 bg-white border-t border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           {/* Left Column: The Problem Narrative */}
           <div className="lg:col-span-6 space-y-6">
             <div className="space-y-3">
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#10264A] tracking-tight leading-tight">
-                From Dense Circulars to<br />Clear Execution
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#10264A] tracking-tight leading-tight text-balance">
+                From Dense Circulars to<br />Defensible Execution
               </h2>
-              <p className="text-base text-slate-600 leading-relaxed max-w-xl">
-                Administrative notices bury deadlines and conditions inside lengthy text. Important obligations get overlooked, and ambiguous rules create delays.
+              <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl text-pretty font-normal">
+                Administrative directives hide critical deadlines and conditional obligations inside lengthy prose. Unclear mandates create delays, missed requirements, and operational risk.
               </p>
             </div>
 
             {/* Two Features */}
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               {/* Feature 1 */}
               <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-[#EBF3FF] flex items-center justify-center text-[#1765F5] flex-shrink-0 mt-0.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/70 flex items-center justify-center text-[#1765F5] flex-shrink-0 mt-0.5">
                   <svg
                     className="w-5 h-5"
                     viewBox="0 0 24 24"
@@ -36,19 +35,19 @@ export default function ProblemSection() {
                     <line x1="15" y1="9" x2="9" y2="15" />
                   </svg>
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-sm font-bold text-slate-900">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-slate-900">
                     Explicit Omission Detection
-                  </h4>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Surfaces unstated owners, missing fee amounts, and omitted deadlines before saving.
+                  </h3>
+                  <p className="text-[13px] text-slate-600 leading-relaxed">
+                    Surfaces unstated owners, missing fee amounts, and omitted deadlines before checklist approval.
                   </p>
                 </div>
               </div>
 
               {/* Feature 2 */}
               <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-[#EBF3FF] flex items-center justify-center text-[#1765F5] flex-shrink-0 mt-0.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/70 flex items-center justify-center text-[#1765F5] flex-shrink-0 mt-0.5">
                   <svg
                     className="w-5 h-5"
                     viewBox="0 0 24 24"
@@ -64,26 +63,15 @@ export default function ProblemSection() {
                     <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-sm font-bold text-slate-900">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-slate-900">
                     Deterministic Citations
-                  </h4>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Binds every task to its exact source paragraph (P1, P2…) for defensible auditing.
+                  </h3>
+                  <p className="text-[13px] text-slate-600 leading-relaxed">
+                    Binds every extracted task to its exact source paragraph (P1, P2…) for defensible auditing.
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Launch Workspace CTA Button */}
-            <div className="pt-2">
-              <Link
-                href="/app"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#EBF3FF] text-[#1765F5] hover:bg-blue-100 font-semibold text-xs transition-colors"
-              >
-                <span>Launch workspace with demo notices</span>
-                <span>→</span>
-              </Link>
             </div>
           </div>
 
@@ -99,10 +87,10 @@ export default function ProblemSection() {
                 priority={false}
               />
 
-              {/* Overlaid Badge from Reference: "Long notices. Clear actions." */}
-              <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-xl p-4 sm:p-5 space-y-3 max-w-[220px]">
+              {/* Overlaid Badge: "Long notices. Clear actions." */}
+              <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-xl p-4 sm:p-5 space-y-3 max-w-[220px]">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#EBF3FF] text-[#1765F5] flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#1765F5] flex items-center justify-center flex-shrink-0">
                     <svg
                       className="w-4 h-4"
                       viewBox="0 0 24 24"
@@ -114,27 +102,27 @@ export default function ProblemSection() {
                       <polyline points="14 2 14 8 20 8" />
                     </svg>
                   </div>
-                  <h5 className="text-xs font-bold text-slate-900 leading-tight">
+                  <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 leading-snug">
                     Long notices.<br />Clear actions.
-                  </h5>
+                  </h4>
                 </div>
 
-                <div className="space-y-1.5 pt-1 border-t border-slate-100 text-[11px]">
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="text-[#159B62] font-bold">✓</span>
-                    <span>Extracted tasks</span>
+                <div className="space-y-1.5 pt-1.5 border-t border-slate-100 text-xs">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span className="font-medium">Extracted tasks</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="text-[#159B62] font-bold">✓</span>
-                    <span>Tracked deadlines</span>
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span className="font-medium">Tracked deadlines</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="text-[#159B62] font-bold">✓</span>
-                    <span>Cited sources</span>
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span className="font-medium">Cited sources</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-700">
-                    <span className="text-[#159B62] font-bold">✓</span>
-                    <span>Ready for review</span>
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <span className="text-emerald-600 font-bold">✓</span>
+                    <span className="font-medium">Ready for review</span>
                   </div>
                 </div>
               </div>

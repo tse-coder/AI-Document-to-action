@@ -6,7 +6,7 @@ export default function WorkflowSection() {
       number: "01",
       title: "Input Notice",
       description:
-        "Paste any raw administrative text. The system deterministically indexes it into numbered paragraphs (P1, P2…).",
+        "Paste any raw administrative text. The system deterministically indexes it into numbered paragraphs (P1, P2…) for provenance.",
       icon: (
         <svg
           className="w-5 h-5 text-[#1765F5]"
@@ -28,7 +28,7 @@ export default function WorkflowSection() {
       number: "02",
       title: "Extract Requirements",
       description:
-        "AI scans each paragraph to identify concrete tasks, deadlines, owners, and conditional exceptions.",
+        "AI scans each paragraph to isolate concrete duties, submission deadlines, designated owners, and conditional rules.",
       icon: (
         <svg
           className="w-5 h-5 text-[#1765F5]"
@@ -48,7 +48,7 @@ export default function WorkflowSection() {
       number: "03",
       title: "Verify & Clarify",
       description:
-        "Review cited paragraphs directly and answer clarification prompts for any ambiguous information.",
+        "Inspect exact source citations directly and resolve guided clarification prompts for ambiguous clauses before saving.",
       icon: (
         <svg
           className="w-5 h-5 text-[#1765F5]"
@@ -68,7 +68,7 @@ export default function WorkflowSection() {
     },
     {
       number: "04",
-      title: "Approve & Save",
+      title: "Approve & Persist",
       description:
         "Edit task descriptions inline and approve to store a verified, auditable checklist in institutional memory.",
       icon: (
@@ -89,63 +89,57 @@ export default function WorkflowSection() {
   ];
 
   return (
-    <section id="how-it-works" className="py-20 sm:py-28 bg-white border-t border-slate-200/80">
+    <section id="how-it-works" className="py-20 sm:py-28 bg-[#FAFCFF] border-t border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14 sm:mb-16">
           <div className="space-y-3">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#10264A] tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#10264A] tracking-tight text-balance">
               How Doc2Action Works
             </h2>
-            <p className="text-sm sm:text-base text-slate-600">
-              <span className="text-[#1765F5] font-semibold">From raw</span> administrative notices to verified checklists{" "}
-              <span className="text-[#1765F5] font-semibold">in four concise steps.</span>
+            <p className="text-base sm:text-lg text-slate-600 max-w-2xl font-normal leading-relaxed text-pretty">
+              A transparent, four-step pipeline transforming dense administrative directives into defensible, verified checklists.
             </p>
           </div>
 
           <div className="flex-shrink-0">
             <Link
               href="/app"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#1765F5] hover:bg-blue-600 active:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1765F5] hover:bg-blue-600 active:bg-blue-700 text-white font-semibold text-xs sm:text-[13px] transition-colors shadow-xs"
             >
-              <span>Try the full workspace with demo documents</span>
+              <span>Try workspace with demo notices</span>
               <span>→</span>
             </Link>
           </div>
         </div>
 
         {/* 4 Steps Row with Connecting Arrows */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-7 lg:gap-8 relative">
           {steps.map((step, idx) => (
-            <div key={step.number} className="relative flex flex-col space-y-3">
-              {/* Icon Circle */}
+            <div
+              key={step.number}
+              className="relative flex flex-col space-y-3.5 p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-2xs hover:border-blue-200 transition-colors"
+            >
+              {/* Icon Circle & Step Number */}
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-full bg-[#EBF3FF] flex items-center justify-center">
+                <div className="w-11 h-11 rounded-xl bg-blue-50/80 border border-blue-100/70 flex items-center justify-center">
                   {step.icon}
                 </div>
 
-                {/* Connecting arrow for desktop between steps */}
-                {idx < steps.length - 1 && (
-                  <div className="hidden lg:block text-slate-300 text-lg pr-4 select-none">
-                    →
-                  </div>
-                )}
-              </div>
-
-              {/* Step Number & Title */}
-              <div className="pt-2">
-                <span className="text-xs font-mono font-bold text-slate-400">
+                <span className="text-xs font-mono font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60">
                   {step.number}
                 </span>
-                <h3 className="text-sm sm:text-base font-bold text-[#10264A] mt-1">
-                  {step.title}
-                </h3>
               </div>
 
-              {/* Description */}
-              <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed">
-                {step.description}
-              </p>
+              {/* Title & Description */}
+              <div className="space-y-1.5 pt-1">
+                <h3 className="text-base font-bold text-[#10264A] tracking-tight">
+                  {step.title}
+                </h3>
+                <p className="text-[13px] text-slate-600 leading-relaxed font-normal">
+                  {step.description}
+                </p>
+              </div>
             </div>
           ))}
         </div>
