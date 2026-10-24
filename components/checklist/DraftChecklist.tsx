@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import type { Proposal, TaskBase, ValidationIssue } from "@/lib/types";
+import { InfoIcon, AlertTriangleIcon, AlertCircleIcon } from "@/components/icons";
 
 interface Props {
   proposal: Proposal;
@@ -137,8 +138,8 @@ export default function DraftChecklist({
 
       {tasks.length === 0 ? (
         <div className="p-6 rounded-lg border border-dashed border-amber-300 bg-amber-50/70 text-center space-y-2">
-          <div className="w-9 h-9 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-base font-bold select-none" aria-hidden="true">
-            ℹ️
+          <div className="w-10 h-10 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-base font-bold select-none" aria-hidden="true">
+            <InfoIcon className="w-5 h-5 text-amber-700" />
           </div>
           <h4 className="text-sm font-bold text-amber-900">
             No actionable tasks found in this notice
@@ -248,8 +249,9 @@ export default function DraftChecklist({
                       />
                     )}
                     {hasError && (
-                      <p className="text-[11px] text-red-600 font-medium">
-                        ⚠️ {hasError}
+                      <p className="text-[11px] text-red-600 font-medium inline-flex items-center gap-1">
+                        <AlertCircleIcon className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+                        <span>{hasError}</span>
                       </p>
                     )}
 
@@ -265,12 +267,14 @@ export default function DraftChecklist({
                     <div className="flex flex-wrap gap-1">
                       {isMissingDeadline && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                          <span aria-hidden="true">⚠️</span> No deadline stated
+                          <AlertTriangleIcon className="w-3 h-3 text-amber-700 flex-shrink-0" />
+                          <span>No deadline stated</span>
                         </span>
                       )}
                       {isMissingOwner && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                          <span aria-hidden="true">⚠️</span> Who is responsible?
+                          <AlertTriangleIcon className="w-3 h-3 text-amber-700 flex-shrink-0" />
+                          <span>Who is responsible?</span>
                         </span>
                       )}
                       {taskIssues.map((issue, idx) => (
@@ -278,7 +282,8 @@ export default function DraftChecklist({
                           key={idx}
                           className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200"
                         >
-                          <span aria-hidden="true">ℹ️</span> {issue.message}
+                          <InfoIcon className="w-3 h-3 text-amber-700 flex-shrink-0" />
+                          <span>{issue.message}</span>
                         </span>
                       ))}
                     </div>
@@ -289,9 +294,9 @@ export default function DraftChecklist({
                         {taskServerErrors.map((err, idx) => (
                           <div
                             key={`srv-${idx}`}
-                            className="p-1.5 bg-red-50 border border-red-200 rounded text-[11px] text-red-700 flex items-start gap-1 font-medium"
+                            className="p-1.5 bg-red-50 border border-red-200 rounded text-[11px] text-red-700 flex items-start gap-1.5 font-medium"
                           >
-                            <span aria-hidden="true">🚫</span>
+                            <AlertCircleIcon className="w-3.5 h-3.5 text-red-600 flex-shrink-0 mt-0.5" />
                             <span>{err.message}</span>
                           </div>
                         ))}
@@ -478,8 +483,9 @@ export default function DraftChecklist({
                   />
                 )}
                 {hasError && (
-                  <p className="mt-1 text-xs text-red-600 font-medium">
-                    ⚠️ {hasError}
+                  <p className="mt-1 text-xs text-red-600 font-medium inline-flex items-center gap-1">
+                    <AlertCircleIcon className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+                    <span>{hasError}</span>
                   </p>
                 )}
               </div>
@@ -549,12 +555,14 @@ export default function DraftChecklist({
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {isMissingDeadline && (
                   <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                    <span aria-hidden="true">⚠️</span> No deadline stated
+                    <AlertTriangleIcon className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                    <span>No deadline stated</span>
                   </span>
                 )}
                 {isMissingOwner && (
                   <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                    <span aria-hidden="true">⚠️</span> Who is responsible?
+                    <AlertTriangleIcon className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                    <span>Who is responsible?</span>
                   </span>
                 )}
                 {taskIssues.map((issue, idx) => (
@@ -562,7 +570,8 @@ export default function DraftChecklist({
                     key={idx}
                     className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200"
                   >
-                    <span aria-hidden="true">ℹ️</span> {issue.message}
+                    <InfoIcon className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                    <span>{issue.message}</span>
                   </span>
                 ))}
               </div>
@@ -575,7 +584,7 @@ export default function DraftChecklist({
                       key={`m-srv-${idx}`}
                       className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700 flex items-start gap-1.5 font-medium"
                     >
-                      <span aria-hidden="true">🚫</span>
+                      <AlertCircleIcon className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                       <span>{err.message}</span>
                     </div>
                   ))}
@@ -592,9 +601,7 @@ export default function DraftChecklist({
       {proposal.absent_information && proposal.absent_information.length > 0 && (
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2 mt-4">
           <div className="flex items-center gap-1.5">
-            <span className="text-sm select-none" aria-hidden="true">
-              ℹ️
-            </span>
+            <InfoIcon className="w-4 h-4 text-slate-600" />
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
               Absent Information
             </h4>

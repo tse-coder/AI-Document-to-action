@@ -9,6 +9,8 @@ import { getDocuments } from "@/lib/api-client";
 import ErrorBanner from "@/components/shared/ErrorBanner";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
+import { FileTextIcon, PlusIcon, TrashIcon } from "@/components/icons";
+
 interface Props {
   documents?: Document[];
   selectedId?: string | null;
@@ -85,15 +87,19 @@ export default function SavedNoticesList({
 
   return (
     <div className="p-4">
-      <div className="flex items-start justify-between gap-2 mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Saved Notices</h2>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <FileTextIcon className="w-5 h-5 text-gray-500" />
+          <h2 className="text-base font-bold text-gray-900 tracking-tight">Saved Notices</h2>
+        </div>
         {onNewNotice && (
           <button
             type="button"
             onClick={onNewNotice}
-            className="px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-blue-700 bg-white border border-blue-200 rounded-md hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-colors shadow-2xs"
           >
-            New notice
+            <PlusIcon className="w-3.5 h-3.5" />
+            <span>New notice</span>
           </button>
         )}
       </div>
@@ -109,18 +115,22 @@ export default function SavedNoticesList({
       )}
 
       {!isLoading && !errorMsg && docs.length === 0 && (
-        <div className="p-4 rounded-md border border-dashed border-gray-300 bg-white text-center space-y-2">
-          <p className="text-sm font-medium text-gray-700">No saved notices yet</p>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            Paste a notice in the center panel and click Analyze to create one.
+        <div className="p-5 rounded-lg border border-dashed border-gray-300 bg-white text-center space-y-2.5">
+          <div className="w-10 h-10 mx-auto rounded-full bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-200">
+            <FileTextIcon className="w-5 h-5" />
+          </div>
+          <p className="text-sm font-semibold text-gray-800">No saved notices yet</p>
+          <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
+            Paste a notice in the center panel and click Analyze to generate actionable checklists.
           </p>
           {onNewNotice && (
             <button
               type="button"
               onClick={onNewNotice}
-              className="mt-2 inline-flex items-center justify-center px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-h-[40px] transition-colors"
+              className="mt-2 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-h-[40px] transition-colors"
             >
-              Paste a notice
+              <PlusIcon className="w-3.5 h-3.5" />
+              <span>Paste a notice</span>
             </button>
           )}
         </div>
@@ -135,10 +145,10 @@ export default function SavedNoticesList({
             return (
               <li key={doc.doc_id}>
                 <div
-                  className={`rounded-md border p-3 transition-colors ${
+                  className={`rounded-lg border p-3 transition-all duration-150 ${
                     isSelected
-                      ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
-                      : "border-gray-200 bg-white hover:bg-gray-50"
+                      ? "border-blue-500 bg-blue-50/70 ring-1 ring-blue-500 shadow-2xs"
+                      : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/60"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -146,22 +156,36 @@ export default function SavedNoticesList({
                       type="button"
                       onClick={() => handleSelect(doc.doc_id)}
                       aria-current={isSelected ? "true" : undefined}
-                      className="flex-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                      className="flex-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded flex items-start gap-2.5"
                     >
-                      <span
-                        className={`block text-sm leading-snug ${
-                          isSelected
-                            ? "font-semibold text-blue-900"
-                            : "font-medium text-gray-800"
+                      <FileTextIcon
+                        className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                          isSelected ? "text-blue-600" : "text-gray-400"
                         }`}
-                      >
-                        {doc.title}
-                      </span>
-                      <span className="mt-1 block text-xs text-gray-500">
-                        {doc.origin === "demo" ? "Demo" : "Pasted"} ·{" "}
-                        {doc.paragraph_count}{" "}
-                        {doc.paragraph_count === 1 ? "paragraph" : "paragraphs"}
-                      </span>
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span
+                          className={`block text-sm leading-snug truncate ${
+                            isSelected
+                              ? "font-semibold text-blue-900"
+                              : "font-medium text-gray-800"
+                          }`}
+                        >
+                          {doc.title}
+                        </span>
+                        <span className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
+                          <span className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold uppercase tracking-wider ${
+                            doc.origin === "demo" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"
+                          }`}>
+                            {doc.origin === "demo" ? "Demo" : "Pasted"}
+                          </span>
+                          <span>·</span>
+                          <span>
+                            {doc.paragraph_count}{" "}
+                            {doc.paragraph_count === 1 ? "para" : "paras"}
+                          </span>
+                        </span>
+                      </div>
                       {isSelected && <span className="sr-only"> (selected)</span>}
                     </button>
                     {onDeleteNotice && (
@@ -173,9 +197,9 @@ export default function SavedNoticesList({
                         }}
                         aria-label={`Delete notice ${doc.title}`}
                         title="Delete notice"
-                        className="opacity-60 hover:opacity-100 p-1 text-gray-400 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded transition-colors"
+                        className="opacity-70 hover:opacity-100 p-1.5 text-gray-400 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded transition-colors"
                       >
-                        <span aria-hidden="true" className="text-sm">🗑️</span>
+                        <TrashIcon className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
