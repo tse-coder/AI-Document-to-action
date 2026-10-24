@@ -10,6 +10,7 @@ import TextInput from "@/components/document/TextInput";
 import ParagraphViewer from "@/components/document/ParagraphViewer";
 import SavedChecklist from "@/components/checklist/SavedChecklist";
 import DraftChecklist from "@/components/checklist/DraftChecklist";
+import ClarificationForm from "@/components/checklist/ClarificationForm";
 import ErrorBanner from "@/components/shared/ErrorBanner";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
@@ -38,6 +39,9 @@ export default function Home() {
     draftText,
     editedTasks,
     updateTask,
+    submittingAnswers,
+    answerError,
+    answerQuestions,
     highlightedParas,
     setHighlightedParas,
     selectDocument,
@@ -77,6 +81,9 @@ export default function Home() {
   if (analyzing || run?.status === "running") {
     panelStatus = "Reading notice...";
     panelStatusClasses = "bg-blue-100 text-blue-800 animate-pulse";
+  } else if (submittingAnswers) {
+    panelStatus = "Updating draft...";
+    panelStatusClasses = "bg-amber-100 text-amber-800 animate-pulse";
   } else if (run?.status === "error") {
     panelStatus = "Error";
     panelStatusClasses = "bg-red-100 text-red-800";
@@ -281,6 +288,19 @@ export default function Home() {
                 Your pasted text has been preserved in the center panel.
               </p>
             </div>
+          ) : run?.status === "needs_clarification" && run.questions?.length > 0 ? (
+            <ClarificationForm
+              questions={run.questions}
+              submitting={submittingAnswers}
+              error={answerError}
+              onSubmit={answerQuestions}
+              onSourceRefClick={(refs) => {
+                setHighlightedParas(refs);
+                if (typeof window !== "undefined" && window.innerWidth < 768) {
+                  setActiveTab("document");
+                }
+              }}
+            />
           ) : run?.status === "needs_clarification" ? (
             <div className="space-y-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
               <div className="flex items-center gap-2">
@@ -290,7 +310,7 @@ export default function Home() {
                 </h3>
               </div>
               <p className="text-xs text-amber-800 leading-relaxed">
-                The agent identified {run.questions.length} question(s) regarding missing details.
+                No open questions remaining.
               </p>
             </div>
           ) : run?.status === "awaiting_approval" && run.proposal ? (

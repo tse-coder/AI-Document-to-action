@@ -13,9 +13,11 @@ import {
   getDocument,
   getDocuments,
   retryRun,
+  submitAnswers,
 } from "@/lib/api-client";
 import { splitParagraphs } from "@/lib/paragraph-utils";
 import type {
+  AnswerInput,
   ChecklistDetail,
   Document,
   Paragraph,
@@ -63,9 +65,11 @@ export function useWorkspace() {
   const [checklistLoading, setChecklistLoading] = useState(false);
   const [checklistError, setChecklistError] = useState<string | null>(null);
 
-  // Analysis & Run state (FE-08, FE-10)
+  // Analysis & Run state (FE-08, FE-10, FE-15)
   const [run, setRun] = useState<Run | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [submittingAnswers, setSubmittingAnswers] = useState(false);
+  const [answerError, setAnswerError] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftText, setDraftText] = useState("");
   const [editedTasks, setEditedTasks] = useState<TaskBase[]>([]);
@@ -362,6 +366,33 @@ export function useWorkspace() {
     });
   }, []);
 
+  // Submit clarification answers (FE-15)
+  const answerQuestions = useCallback(
+    async (answerInputs: AnswerInput[]) => {
+      if (!run?.run_id) return;
+      setSubmittingAnswers(true);
+      setAnswerError(null);
+
+      try {
+        const result = await submitAnswers(run.run_id, answerInputs);
+        setRun(result.run);
+        if (result.run.proposal?.tasks) {
+          setEditedTasks(result.run.proposal.tasks);
+        }
+      } catch (err) {
+        setAnswerError(
+          friendlyMessage(
+            err,
+            "Could not submit answers. Please check your answers and try again."
+          )
+        );
+      } finally {
+        setSubmittingAnswers(false);
+      }
+    },
+    [run?.run_id]
+  );
+
   useEffect(() => {
     void loadDocuments();
 
@@ -386,6 +417,10 @@ export function useWorkspace() {
     run,
     setRun,
     analyzing,
+    submittingAnswers,
+    answerError,
+    setAnswerError,
+    answerQuestions,
     draftTitle,
     setDraftTitle,
     draftText,
