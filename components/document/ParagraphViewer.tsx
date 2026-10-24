@@ -63,6 +63,8 @@ export default function ParagraphViewer({
             id={p.paragraph_id}
             data-para-id={p.paragraph_id}
             tabIndex={0}
+            role="article"
+            aria-current={isHighlighted ? "true" : undefined}
             onClick={() => onParagraphClick?.(p.paragraph_id)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -70,22 +72,32 @@ export default function ParagraphViewer({
                 onParagraphClick?.(p.paragraph_id);
               }
             }}
-            className={`flex items-start gap-3 p-3.5 rounded-md transition-all duration-200 border cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+            className={`flex items-start gap-3 p-3.5 rounded-md transition-all duration-200 border cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 min-h-[44px] ${
               isHighlighted
                 ? "bg-amber-50 border-amber-300 ring-2 ring-amber-400 shadow-sm"
                 : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
             }`}
           >
-            <span
-              className={`text-xs font-mono font-bold px-2 py-0.5 rounded flex-shrink-0 mt-0.5 select-none transition-colors ${
-                isHighlighted
-                  ? "bg-amber-200 text-amber-900 border border-amber-300"
-                  : "bg-gray-100 text-gray-700 border border-gray-200"
-              }`}
-            >
-              P{p.position}
-            </span>
+            <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
+              <span
+                className={`text-xs font-mono font-bold px-2 py-0.5 rounded select-none transition-colors ${
+                  isHighlighted
+                    ? "bg-amber-200 text-amber-900 border border-amber-300"
+                    : "bg-gray-100 text-gray-700 border border-gray-200"
+                }`}
+              >
+                P{p.position}
+              </span>
+              {isHighlighted && (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-1 py-0.5 rounded bg-amber-300 text-amber-950 border border-amber-400 select-none">
+                  Cited
+                </span>
+              )}
+            </div>
             <p className="text-sm leading-relaxed text-gray-800 select-text">
+              {isHighlighted && (
+                <span className="sr-only">[Cited in active task] </span>
+              )}
               {p.text}
             </p>
           </div>
