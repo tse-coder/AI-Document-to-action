@@ -1,0 +1,25 @@
+-- =============================================
+-- Seed Data — Demo notices and starter tasks
+-- Owner: Member 1 (QA & Documentation Lead)
+-- =============================================
+-- Apply after schema.sql:
+--   Run in Supabase SQL Editor or:
+--   psql $DATABASE_URL -f seed.sql
+-- =============================================
+
+-- TODO: Member 1 fills this in with:
+--
+-- 1. Two demo documents (N1, N2):
+--    INSERT INTO documents (id, title, origin, paragraph_count, created_at)
+--    VALUES ('N1', 'Student ID Card Renewal Notice', 'demo', 5, '2026-10-24T06:00:00Z');
+--
+-- 2. Numbered paragraphs for each:
+--    INSERT INTO paragraphs (id, doc_id, position, text)
+--    VALUES ('N1-P1', 'N1', 1, 'The Registrar''s Office will renew student ID cards...');
+--
+-- 3. Two existing checklist tasks for N1:
+--    INSERT INTO checklist_tasks (id, doc_id, description, ...)
+--    VALUES ('TSK-0001', 'N1', 'Submit renewal form', ...);
+--
+-- See api-spec.md sections 3 and 7 for exact field requirements.
+

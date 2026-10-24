@@ -1,0 +1,17 @@
+-- =============================================
+-- Database Schema
+-- Owner: Member 4 (Backend Engineer)
+-- =============================================
+-- Apply via Supabase SQL Editor or:
+--   psql $DATABASE_URL -f lib/db/schema.sql
+-- =============================================
+
+-- TODO: Create tables:
+--   documents       (id, title, origin, paragraph_count, created_at)
+--   paragraphs      (id, doc_id, position, text)
+--   runs            (id, doc_id, status, request, round, retry_count, proposal, proposal_version, messages, model_turns_used, tool_calls_used, limit_hit, error_code, error_message, created_at, updated_at)
+--   run_questions   (id, run_id, question_id, field, task_client_id, text, source_refs, allow_not_stated, answer, not_stated, answered_at)
+--   tool_calls      (id, run_id, seq, phase, tool, args, ok, result_summary, result, duration_ms, at)
+--   checklist_tasks (id, doc_id, description, source_refs, deadline_date, deadline_text, deadline_source, condition, owner, owner_source, status, last_run_id, updated_at)
+--   task_sources    (task_id, doc_id, paragraph_id, ord)
+--   save_events     (run_id, doc_id, task_count, saved_at)
