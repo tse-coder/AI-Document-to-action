@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { runAgent } from "./agent/run-agent";
 import {
   appendRunOutput,
