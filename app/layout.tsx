@@ -29,9 +29,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className="h-full antialiased bg-gray-50 text-gray-900 font-sans">
-        {children}
+    <html
+      lang="en"
+      className={`h-full ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="h-full antialiased bg-gray-50 text-slate-900 font-sans">
+        <ClerkProvider>
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );
