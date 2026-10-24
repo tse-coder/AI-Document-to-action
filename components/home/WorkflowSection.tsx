@@ -94,11 +94,6 @@ export default function WorkflowSection() {
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
           <div className="space-y-3">
-            <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#EBF3FF] text-[#1765F5] border border-blue-200/60">
-                Workflow
-              </span>
-            </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#10264A] tracking-tight">
               How Doc2Action Works
             </h2>

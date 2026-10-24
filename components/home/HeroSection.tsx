@@ -13,13 +13,6 @@ export default function HeroSection() {
         <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-14">
           {/* Left Column: Eyebrow, Headline, Copy, 4 Features, CTA (~54% width) */}
           <div className="w-full lg:w-[54%] space-y-7">
-            {/* Eyebrow Badge */}
-            <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#EBF3FF] text-[#1765F5] border border-blue-200/60">
-                AI Document-to-Action Agent
-              </span>
-            </div>
-
             {/* Headline and Supporting Text */}
             <div className="space-y-4">
               <h1 className="text-4xl sm:text-5xl lg:text-[3.35rem] font-extrabold tracking-tight text-[#10264A] leading-[1.12]">
