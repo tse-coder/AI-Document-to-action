@@ -101,7 +101,7 @@ export async function runAgentPass(
       docId: run.doc_id,
       request: run.request,
       round: run.round,
-      previousMessages: previousMessages.length > 0 ? (previousMessages as any) : undefined,
+      previousMessages: previousMessages.length > 0 ? (previousMessages as unknown[]) : undefined,
       answers: options.answers ?? (context.answers.length ? context.answers : undefined),
       paragraphIds: document.paragraphs.map((paragraph) => paragraph.paragraph_id),
       paragraphTexts: new Map<string, string>(document.paragraphs.map(
