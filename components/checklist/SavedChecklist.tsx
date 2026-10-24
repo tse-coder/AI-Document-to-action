@@ -4,19 +4,25 @@
 
 "use client";
 
+import { useState } from "react";
 import type { ChecklistDetail } from "@/lib/types";
 
 interface Props {
   checklist: ChecklistDetail;
   onSourceRefClick?: (refId: string) => void;
   onNewAnalysis?: () => void;
+  onDeleteChecklist?: (docId: string) => Promise<void> | void;
 }
 
 export default function SavedChecklist({
   checklist,
   onSourceRefClick,
   onNewAnalysis,
+  onDeleteChecklist,
 }: Props) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const formattedDate = checklist.last_saved_at
     ? new Date(checklist.last_saved_at).toLocaleString()
     : "Recently saved";
@@ -78,6 +84,46 @@ export default function SavedChecklist({
             >
               New analysis
             </button>
+          )}
+          {onDeleteChecklist && (
+            confirmDelete ? (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    try {
+                      await onDeleteChecklist(checklist.doc_id);
+                    } finally {
+                      setIsDeleting(false);
+                      setConfirmDelete(false);
+                    }
+                  }}
+                  className="text-xs font-bold min-h-[40px] px-2.5 py-1.5 inline-flex items-center justify-center text-white bg-red-600 hover:bg-red-700 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors disabled:bg-red-300"
+                >
+                  {isDeleting ? "Deleting..." : "Confirm Delete"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-xs font-medium min-h-[40px] px-2 py-1.5 inline-flex items-center justify-center text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="text-xs font-semibold min-h-[40px] px-2.5 py-1.5 inline-flex items-center justify-center text-red-700 bg-white border border-red-200 rounded hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors"
+                title="Delete this saved checklist"
+              >
+                <span aria-hidden="true" className="mr-1">🗑️</span>
+                <span>Delete</span>
+              </button>
+            )
           )}
         </div>
       </div>

@@ -13,6 +13,7 @@ import DraftChecklist from "@/components/checklist/DraftChecklist";
 import ClarificationForm from "@/components/checklist/ClarificationForm";
 import ApproveButton from "@/components/checklist/ApproveButton";
 import ToolLog from "@/components/checklist/ToolLog";
+import DocumentChat from "@/components/document/DocumentChat";
 import ErrorBanner from "@/components/shared/ErrorBanner";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
@@ -22,6 +23,8 @@ type ActiveTab = "notices" | "document" | "checklist";
 export default function Home() {
   // Mobile active tab state for switching panels on small screens
   const [activeTab, setActiveTab] = useState<ActiveTab>("document");
+  // Center panel view mode: document paragraphs or chat assistant
+  const [centerViewMode, setCenterViewMode] = useState<"paragraphs" | "chat">("paragraphs");
 
   const {
     documents,
@@ -35,6 +38,7 @@ export default function Home() {
     checklist,
     checklistLoading,
     checklistError,
+    deleteSavedChecklist,
     run,
     analyzing,
     draftTitle,
@@ -216,39 +220,86 @@ export default function Home() {
                 </button>
               </div>
 
-              {documentLoading && (
-                <div className="py-8">
-                  <LoadingSpinner label="Loading notice paragraphs..." />
-                </div>
-              )}
+              {/* Center Panel Mode Toggle: Notice Paragraphs vs Chat Assistant */}
+              <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setCenterViewMode("paragraphs")}
+                  className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    centerViewMode === "paragraphs"
+                      ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-transparent"
+                  }`}
+                >
+                  <span aria-hidden="true">📄</span>
+                  <span>Document Paragraphs</span>
+                  {paragraphs.length > 0 && (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                      {paragraphs.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCenterViewMode("chat")}
+                  className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    centerViewMode === "chat"
+                      ? "bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-transparent"
+                  }`}
+                >
+                  <span aria-hidden="true">💬</span>
+                  <span>Chat with Assistant</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true" />
+                </button>
+              </div>
 
-              {!documentLoading && documentError && (
-                <ErrorBanner message={documentError} onRetry={retrySelection} />
-              )}
-
-              {!documentLoading && !documentError && paragraphs.length === 0 && (
-                <div className="p-4 rounded-md border border-dashed border-gray-300 bg-gray-50">
-                  <p className="text-sm font-medium text-gray-700">
-                    This notice has no paragraphs to display.
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Try selecting another notice or pasting a new one.
-                  </p>
-                </div>
-              )}
-
-              {!documentLoading && !documentError && paragraphs.length > 0 && (
-                <ParagraphViewer
-                  paragraphs={paragraphs}
-                  highlightedRefs={highlightedParas}
-                  onParagraphClick={(pId) =>
-                    setHighlightedParas((prev) =>
-                      prev.includes(pId)
-                        ? prev.filter((x) => x !== pId)
-                        : [...prev, pId]
-                    )
-                  }
+              {centerViewMode === "chat" ? (
+                <DocumentChat
+                  docId={selectedDocId || activeDocument?.doc_id || "draft"}
+                  docTitle={displayTitle}
+                  onCitationClick={(pId) => {
+                    setHighlightedParas([pId]);
+                    setCenterViewMode("paragraphs");
+                  }}
                 />
+              ) : (
+                <>
+                  {documentLoading && (
+                    <div className="py-8">
+                      <LoadingSpinner label="Loading notice paragraphs..." />
+                    </div>
+                  )}
+
+                  {!documentLoading && documentError && (
+                    <ErrorBanner message={documentError} onRetry={retrySelection} />
+                  )}
+
+                  {!documentLoading && !documentError && paragraphs.length === 0 && (
+                    <div className="p-4 rounded-md border border-dashed border-gray-300 bg-gray-50">
+                      <p className="text-sm font-medium text-gray-700">
+                        This notice has no paragraphs to display.
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Try selecting another notice or pasting a new one.
+                      </p>
+                    </div>
+                  )}
+
+                  {!documentLoading && !documentError && paragraphs.length > 0 && (
+                    <ParagraphViewer
+                      paragraphs={paragraphs}
+                      highlightedRefs={highlightedParas}
+                      onParagraphClick={(pId) =>
+                        setHighlightedParas((prev) =>
+                          prev.includes(pId)
+                            ? prev.filter((x) => x !== pId)
+                            : [...prev, pId]
+                        )
+                      }
+                    />
+                  )}
+                </>
               )}
             </div>
           ) : (
@@ -407,6 +458,7 @@ export default function Home() {
                     checklist={checklist}
                     onSourceRefClick={(refId) => setHighlightedParas([refId])}
                     onNewAnalysis={handleNewNotice}
+                    onDeleteChecklist={deleteSavedChecklist}
                   />
                 )}
 
@@ -423,6 +475,7 @@ export default function Home() {
                       }
                     }
                     onNewAnalysis={handleNewNotice}
+                    onDeleteChecklist={deleteSavedChecklist}
                   />
                 )}
             </div>
