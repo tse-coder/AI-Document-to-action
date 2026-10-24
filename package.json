@@ -1,0 +1,36 @@
+{
+  "name": "ai-document-to-action",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "db:apply": "psql \"$DATABASE_URL\" -f lib/db/schema.sql && psql \"$DATABASE_URL\" -f seed.sql",
+    "db:reset": "psql \"$DATABASE_URL\" -f lib/db/reset.sql"
+  },
+  "dependencies": {
+    "@google/genai": "^2.31.0",
+    "chrono-node": "^2.10.3",
+    "next": "^16.4.3",
+    "postgres": "^3.4.9",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
