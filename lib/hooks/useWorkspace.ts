@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   ApiError,
+  confirmRun,
   createRun,
   getChecklist,
   getDocument,
@@ -23,6 +24,7 @@ import type {
   Paragraph,
   Run,
   TaskBase,
+  ValidationIssue,
 } from "@/lib/types";
 import { useRunPolling } from "./useRunPolling";
 
@@ -65,11 +67,19 @@ export function useWorkspace() {
   const [checklistLoading, setChecklistLoading] = useState(false);
   const [checklistError, setChecklistError] = useState<string | null>(null);
 
-  // Analysis & Run state (FE-08, FE-10, FE-15)
+  // Analysis & Run state (FE-08, FE-10, FE-15, FE-16)
   const [run, setRun] = useState<Run | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [submittingAnswers, setSubmittingAnswers] = useState(false);
   const [answerError, setAnswerError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [confirmValidationErrors, setConfirmValidationErrors] = useState<
+    ValidationIssue[]
+  >([]);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(
+    null
+  );
   const [draftTitle, setDraftTitle] = useState("");
   const [draftText, setDraftText] = useState("");
   const [editedTasks, setEditedTasks] = useState<TaskBase[]>([]);
@@ -393,6 +403,64 @@ export function useWorkspace() {
     [run?.run_id]
   );
 
+  // Confirm draft checklist and save to database (FE-16)
+  const confirmDraft = useCallback(async () => {
+    if (!run?.run_id || run.status !== "awaiting_approval") return;
+    setConfirming(true);
+    setConfirmError(null);
+    setConfirmValidationErrors([]);
+    setSaveSuccessMessage(null);
+
+    const tasksToSave =
+      editedTasks.length > 0 ? editedTasks : (run.proposal?.tasks ?? []);
+
+    try {
+      const result = await confirmRun(run.run_id, {
+        proposal_version: run.proposal?.version ?? 1,
+        tasks: tasksToSave,
+      });
+
+      const count = result.saved?.length ?? tasksToSave.length;
+      setSaveSuccessMessage(
+        `✅ ${count} task${count === 1 ? "" : "s"} saved successfully.`
+      );
+
+      // Transition run status to saved
+      setRun((prev) => (prev ? { ...prev, status: "saved" } : null));
+
+      // Refresh sidebar notices list
+      void loadDocuments();
+
+      // Load saved checklist for this document
+      if (result.doc_id) {
+        setSelectedDocId(result.doc_id);
+        void loadSelection(result.doc_id, false);
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "VALIDATION_FAILED") {
+        setConfirmValidationErrors(
+          (err.details as ValidationIssue[]) || []
+        );
+        setConfirmError(
+          err.message || "Please fix validation errors before saving."
+        );
+      } else if (err instanceof ApiError && err.code === "ALREADY_SAVED") {
+        setSaveSuccessMessage("This checklist has already been saved.");
+        setRun((prev) => (prev ? { ...prev, status: "saved" } : null));
+        if (run.doc_id) {
+          setSelectedDocId(run.doc_id);
+          void loadSelection(run.doc_id, false);
+        }
+      } else {
+        setConfirmError(
+          friendlyMessage(err, "Failed to save checklist. Please try again.")
+        );
+      }
+    } finally {
+      setConfirming(false);
+    }
+  }, [run, editedTasks, loadDocuments, loadSelection]);
+
   useEffect(() => {
     void loadDocuments();
 
@@ -421,6 +489,12 @@ export function useWorkspace() {
     answerError,
     setAnswerError,
     answerQuestions,
+    confirming,
+    confirmError,
+    confirmValidationErrors,
+    saveSuccessMessage,
+    setSaveSuccessMessage,
+    confirmDraft,
     draftTitle,
     setDraftTitle,
     draftText,
