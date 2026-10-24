@@ -11,6 +11,7 @@ out/
 # Build
 build/
 dist/
+f-docs/
 
 # Environment variables
 .env
@@ -48,3 +49,8 @@ coverage/
 
 # Misc
 *.pem
+
+# Skills & Agents
+.agents/
+*.skill
+
