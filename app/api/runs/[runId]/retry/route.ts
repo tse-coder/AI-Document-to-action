@@ -7,13 +7,31 @@ import { beginRunRetry, getRunById } from "../../../../../lib/db/queries";
 import { runAgentPass } from "../../../../../lib/run-service";
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ runId: string }> }
 ) {
   const { runId } = await params;
   let runExists = false;
 
   try {
+    const text = await request.text();
+    if (text.trim()) {
+      let raw: unknown;
+      try {
+        raw = JSON.parse(text);
+      } catch {
+        throw new ApiRequestError("INVALID_JSON", "Request body must be valid JSON.", 400);
+      }
+      if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+        throw new ApiRequestError("INVALID_REQUEST", "Retry body must be a JSON object.", 400);
+      }
+      if (Object.keys(raw).length > 0) {
+        throw new ApiRequestError("INVALID_REQUEST", "Retry request accepts no body fields.", 400, [
+          { field: Object.keys(raw)[0], message: "Unknown field." },
+        ]);
+      }
+    }
+
     const run = await getRunById(runId);
     if (!run) throw new ApiRequestError("RUN_NOT_FOUND", "Run not found.", 404);
     runExists = true;

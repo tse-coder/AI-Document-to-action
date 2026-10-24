@@ -45,13 +45,13 @@ function failureCode(error: unknown): string {
   if (/quota|resource exhausted|429/i.test(message)) return "MODEL_QUOTA_EXCEEDED";
   if (/timeout|timed out|deadline/i.test(message)) return "MODEL_TIMEOUT";
   if (/tool/i.test(message)) return "TOOL_FAILURE";
-  return "MODEL_ERROR";
+  return "INTERNAL_ERROR";
 }
 
 function errorHttpStatus(code: string): number {
   if (code === "MODEL_QUOTA_EXCEEDED") return 429;
   if (code === "MODEL_TIMEOUT") return 504;
-  if (code === "TOOL_FAILURE") return 500;
+  if (code === "TOOL_FAILURE" || code === "INTERNAL_ERROR") return 500;
   return 502;
 }
 
@@ -59,6 +59,7 @@ function safeErrorMessage(code: string): string {
   if (code === "MODEL_QUOTA_EXCEEDED") return "The model is temporarily out of quota. Retry shortly.";
   if (code === "MODEL_TIMEOUT") return "The model did not respond in time. Retry.";
   if (code === "TOOL_FAILURE") return "A document tool failed. Retry the run.";
+  if (code === "INTERNAL_ERROR") return "The request could not be completed.";
   return "The model could not complete this request. Retry the run.";
 }
 
@@ -100,8 +101,8 @@ export async function runAgentPass(
       docId: run.doc_id,
       request: run.request,
       round: run.round,
-      previousMessages: previousMessages.length > 0 ? previousMessages : undefined,
-      answers: options.answers,
+      previousMessages: previousMessages.length > 0 ? (previousMessages as any) : undefined,
+      answers: options.answers ?? (context.answers.length ? context.answers : undefined),
       paragraphIds: document.paragraphs.map((paragraph) => paragraph.paragraph_id),
       paragraphTexts: new Map<string, string>(document.paragraphs.map(
         (paragraph): [string, string] => [paragraph.paragraph_id, paragraph.text],
@@ -134,6 +135,11 @@ export async function runAgentPass(
     const nextQuestionRound = options.answers?.length && result.status === "needs_clarification"
       ? Math.min(run.round + 1, 2)
       : run.round;
+    const limitsUsed = {
+      modelTurns: result.limitsUsed.modelTurns,
+      toolCalls: result.limitsUsed.toolCalls,
+      limitHit: result.limitsUsed.limitHit ?? (result.limitsUsed.modelTurns >= 4 || result.limitsUsed.toolCalls >= 6),
+    };
     await appendRunOutput(run.run_id, {
       status: result.status,
       round: nextQuestionRound,
@@ -141,7 +147,7 @@ export async function runAgentPass(
       questions,
       toolLog,
       messages: result.messages,
-      limitsUsed: result.limitsUsed,
+      limitsUsed,
       error,
       finalizeCalled,
     });
@@ -152,7 +158,7 @@ export async function runAgentPass(
         error.message,
         errorHttpStatus(error.code),
         [],
-        true,
+        error.code !== "INTERNAL_ERROR",
         run.run_id,
       );
     }
@@ -160,6 +166,7 @@ export async function runAgentPass(
     if (error instanceof ApiRequestError && error.runId === run.run_id) throw error;
     const code = failureCode(error);
     const message = safeErrorMessage(code);
+    const retryable = code !== "INTERNAL_ERROR";
     try {
       await appendRunOutput(run.run_id, {
         status: "error",
@@ -176,7 +183,7 @@ export async function runAgentPass(
       // Preserve the original model/tool error; the GET endpoint can expose the
       // stale-running timeout if persistence itself was unavailable.
     }
-    throw new ApiRequestError(code, message, errorHttpStatus(code), [], true, run.run_id);
+    throw new ApiRequestError(code, message, errorHttpStatus(code), [], retryable, retryable ? run.run_id : undefined);
   }
 
   const updated = await getRunById(run.run_id);

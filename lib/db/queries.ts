@@ -273,12 +273,27 @@ export async function getRunById(id: string): Promise<Run | null> {
 
 export async function getRunAgentContext(
   id: string,
-): Promise<{ messages: unknown[]; simulateFailure: "none" | "model" | "tool" } | null> {
+): Promise<{
+  messages: unknown[];
+  simulateFailure: "none" | "model" | "tool";
+  answers: { questionId: string; answer: string; notStated: boolean }[];
+} | null> {
   const [row] = await sql`SELECT messages, simulate_failure FROM runs WHERE id = ${id}`;
   if (!row) return null;
+  const questionRows = await sql`
+    SELECT question_id, answer, not_stated
+    FROM run_questions
+    WHERE run_id = ${id} AND answered_at IS NOT NULL
+    ORDER BY substring(question_id from 2)::int
+  `;
   return {
     messages: (row.messages as unknown[]) ?? [],
     simulateFailure: row.simulate_failure as "none" | "model" | "tool",
+    answers: questionRows.map((q) => ({
+      questionId: String(q.question_id),
+      answer: q.answer == null ? "" : String(q.answer),
+      notStated: Boolean(q.not_stated),
+    })),
   };
 }
 
@@ -313,22 +328,19 @@ const RUN_COLUMNS: Record<keyof RunUpdate, string> = {
 };
 
 export async function updateRun(id: string, data: RunUpdate): Promise<void> {
-  const entries = Object.entries(data).filter(([key]) => key in RUN_COLUMNS);
-  if (entries.length === 0) return;
-  const assignments = entries.map(([key], index) => {
-    const column = RUN_COLUMNS[key as keyof RunUpdate];
-    const cast = key === "messages" || key === "proposal" ? "::jsonb" : "";
-    return `"${column}" = $${index + 1}${cast}`;
-  });
-  const values = entries.map(([key, value]) =>
-    key === "messages" || key === "proposal"
-      ? value == null ? null : JSON.stringify(value)
-      : value,
-  );
-  await sql.unsafe(
-    `UPDATE runs SET ${assignments.join(", ")}, updated_at = now() WHERE id = $${values.length + 1}`,
-    [...values, id],
-  );
+  const updates: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (key in RUN_COLUMNS) {
+      const column = RUN_COLUMNS[key as keyof RunUpdate];
+      if (key === "messages" || key === "proposal") {
+        updates[column] = value == null ? null : sql.json(value as any);
+      } else {
+        updates[column] = value;
+      }
+    }
+  }
+  if (Object.keys(updates).length === 0) return;
+  await sql`UPDATE runs SET ${sql(updates)}, updated_at = now() WHERE id = ${id}`;
 }
 
 export async function appendRunOutput(
@@ -361,9 +373,9 @@ export async function appendRunOutput(
     const firstQuestion = Number(maxQuestion.n) + 1;
     await tx`
       UPDATE runs SET status = ${params.status}, round = ${params.round},
-        proposal = ${storedProposal == null ? null : JSON.stringify(storedProposal)}::jsonb,
+        proposal = ${storedProposal == null ? null : tx.json(storedProposal as any)},
         proposal_version = ${proposalVersion},
-        messages = ${JSON.stringify(boundedMessages)}::jsonb,
+        messages = ${tx.json(boundedMessages as any)},
         model_turns_used = ${params.limitsUsed.modelTurns},
         tool_calls_used = ${params.limitsUsed.toolCalls},
         limit_hit = ${params.limitsUsed.limitHit ?? false},
@@ -378,7 +390,7 @@ export async function appendRunOutput(
         INSERT INTO run_questions
           (run_id, question_id, round, field, task_client_id, text, source_refs, allow_not_stated)
         VALUES (${id}, ${qid}, ${params.round}, ${question.field}, ${question.task_client_id},
-          ${question.text}, ${JSON.stringify(question.source_refs)}::jsonb, ${question.allow_not_stated})
+          ${question.text}, ${tx.json(question.source_refs as any)}, ${question.allow_not_stated})
       `;
     }
     const [lastLog] = await tx`SELECT COALESCE(MAX(seq), 0)::int AS n FROM tool_calls WHERE run_id = ${id}`;
@@ -387,8 +399,8 @@ export async function appendRunOutput(
         INSERT INTO tool_calls
           (run_id, seq, phase, tool, args, ok, result_summary, result, duration_ms, at)
         VALUES (${id}, ${Number(lastLog.n) + index + 1}, ${entry.phase}, ${entry.tool},
-          ${JSON.stringify(entry.args)}::jsonb, ${entry.ok}, ${entry.result_summary},
-          ${entry.result == null ? null : JSON.stringify(entry.result)}::jsonb,
+          ${tx.json(entry.args as any)}, ${entry.ok}, ${entry.result_summary},
+          ${entry.result == null ? null : tx.json(entry.result as any)},
           ${entry.duration_ms}, ${entry.at}::timestamptz)
       `;
     }
@@ -492,7 +504,7 @@ export async function recordAnswers(
       ).join("\n"),
     };
     const messages = boundMessages([...(run.messages as unknown[]), answerMessage]);
-    await tx`UPDATE runs SET status = 'running', messages = ${JSON.stringify(messages)}::jsonb,
+    await tx`UPDATE runs SET status = 'running', messages = ${tx.json(messages as any)},
       model_turns_used = 0, tool_calls_used = 0, limit_hit = false,
       updated_at = now() WHERE id = ${id}`;
   });
@@ -621,9 +633,9 @@ export async function saveChecklist(
       INSERT INTO tool_calls
         (run_id, seq, phase, tool, args, ok, result_summary, result, duration_ms, at)
       VALUES (${runIdValue}, ${Number(lastLog.n) + 1}, 'gate', 'save_checklist_changes',
-        ${JSON.stringify({ run_id: runIdValue, doc_id: docId, tasks })}::jsonb,
+        ${tx.json({ run_id: runIdValue, doc_id: docId, tasks } as any)},
         true, ${`${saved.length} task${saved.length === 1 ? "" : "s"} saved`},
-        ${JSON.stringify({ saved, saved_at: event.saved_at })}::jsonb,
+        ${tx.json({ saved, saved_at: event.saved_at } as any)},
         ${Math.max(0, Date.now() - startedAt)}, now())
     `;
     const [updatedRun] = await tx`

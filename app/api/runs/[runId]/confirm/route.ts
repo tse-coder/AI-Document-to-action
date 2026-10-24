@@ -19,20 +19,17 @@ const taskSchema = z.object({
   client_id: z.string().regex(/^C\d+$/u),
   action: z.enum(["create", "update"]),
   task_id: z.string().nullable(),
-  description: z.string().trim().min(5).max(300),
-  source_refs: z.array(z.string().min(1)).min(1).max(6),
+  description: z.string(),
+  source_refs: z.array(z.string().min(1)),
   deadline_date: z.string().nullable(),
   deadline_text: z.string().nullable(),
   deadline_source: z.enum(["document", "user", "none"]),
-  condition: z.string().trim().min(1).max(200).nullable(),
-  owner: z.string().trim().min(1).max(80).nullable(),
+  condition: z.string().nullable(),
+  owner: z.string().nullable(),
   owner_source: z.enum(["document", "user", "none"]),
-}).superRefine((task, ctx) => {
+}).strict().superRefine((task, ctx) => {
   if (new Set(task.source_refs).size !== task.source_refs.length) {
     ctx.addIssue({ code: "custom", path: ["source_refs"], message: "Source paragraph references must be unique." });
-  }
-  if (task.deadline_date !== null && !validDate(task.deadline_date)) {
-    ctx.addIssue({ code: "custom", path: ["deadline_date"], message: "Must be a real YYYY-MM-DD calendar date." });
   }
   if (task.action === "create" && task.task_id !== null) {
     ctx.addIssue({ code: "custom", path: ["task_id"], message: "Create tasks must have a null task_id." });
@@ -40,27 +37,12 @@ const taskSchema = z.object({
   if (task.action === "update" && task.task_id === null) {
     ctx.addIssue({ code: "custom", path: ["task_id"], message: "Update tasks must identify an existing task." });
   }
-  if (task.deadline_source === "document" && (!task.deadline_date || !task.deadline_text)) {
-    ctx.addIssue({ code: "custom", path: ["deadline_source"], message: "Document deadlines require a date and source text." });
-  }
-  if (task.deadline_source === "user" && (!task.deadline_date || task.deadline_text !== null)) {
-    ctx.addIssue({ code: "custom", path: ["deadline_source"], message: "User deadlines require a date and null deadline_text." });
-  }
-  if (task.deadline_source === "none" && (task.deadline_date !== null || task.deadline_text !== null)) {
-    ctx.addIssue({ code: "custom", path: ["deadline_source"], message: "Unstated deadlines must have null date and text." });
-  }
-  if (task.owner_source === "none" && task.owner !== null) {
-    ctx.addIssue({ code: "custom", path: ["owner_source"], message: "Unstated owners must be null." });
-  }
-  if (task.owner_source !== "none" && task.owner === null) {
-    ctx.addIssue({ code: "custom", path: ["owner"], message: "Owner is required unless it is acknowledged as not stated." });
-  }
 });
 
 const confirmSchema = z.object({
   proposal_version: z.number().int().positive(),
   tasks: z.array(taskSchema).max(12),
-});
+}).strict();
 
 function issue(code: string, task: TaskBase, message: string): ValidationIssue {
   return { code, severity: "error", task_client_id: task.client_id, message };

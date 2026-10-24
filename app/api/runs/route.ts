@@ -14,9 +14,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export async function POST(request: NextRequest) {
   try {
     const raw = await parseJson(request);
-    if (!isRecord(raw)) throw new ApiRequestError("INVALID_REQUEST", "Request body must be a JSON object.", 400);
+    if (!isRecord(raw)) throw new ApiRequestError("INVALID_JSON", "Request body must be a JSON object.", 400);
     const body = raw as Partial<CreateRunRequest>;
     const details: { field: string; message: string }[] = [];
+    const ALLOWED_FIELDS = new Set(["doc_id", "text", "title", "request", "simulate_failure"]);
+    for (const key of Object.keys(raw)) {
+      if (!ALLOWED_FIELDS.has(key)) {
+        details.push({ field: key, message: `Unknown field '${key}'.` });
+      }
+    }
     const docIdProvided = body.doc_id !== undefined;
     const textProvided = body.text !== undefined;
     const hasDocId = docIdProvided && typeof body.doc_id === "string" && body.doc_id.trim().length > 0;
