@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { ToolLogEntry } from "../../lib/types";
 
 vi.mock("../../lib/agent/run-agent", () => ({
   runAgent: vi.fn(),
@@ -145,7 +146,7 @@ describe.skipIf(!HAS_TEST_DATABASE)(
       });
 
       it("orders the tool log by sequence number", async () => {
-        const logs = [
+        const logs: ToolLogEntry[] = [
           {
             seq: 2,
             phase: "finalize",
