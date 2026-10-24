@@ -9,7 +9,6 @@ import { UserButton } from "@clerk/nextjs";
 import SavedNoticesList from "@/components/sidebar/SavedNoticesList";
 import ChatInterface from "@/components/chat/ChatInterface";
 import ChecklistTree from "@/components/checklist/ChecklistTree";
-import ClarificationForm from "@/components/checklist/ClarificationForm";
 import ToolLog from "@/components/checklist/ToolLog";
 import RunProgressStepper from "@/components/checklist/RunProgressStepper";
 import ErrorBanner from "@/components/shared/ErrorBanner";
@@ -21,7 +20,6 @@ import {
   FileTextIcon,
   MessageSquareIcon,
   ClipboardListIcon,
-  SparklesIcon,
 } from "@/components/icons";
 import Link from "next/link";
 
@@ -50,8 +48,6 @@ export default function Home({ guestMode = false }: { guestMode?: boolean }) {
     addTask,
     deleteTask,
     submittingAnswers,
-    answerError,
-    answerQuestions,
     answerSingleQuestion,
     chatMessages,
     sendChatMessage,
@@ -88,66 +84,82 @@ export default function Home({ guestMode = false }: { guestMode?: boolean }) {
 
   // Determine status pill for right panel
   let panelStatus = "Idle";
-  let panelStatusClasses = "bg-gray-200 text-gray-700";
+  let panelStatusClasses = "bg-slate-100 text-slate-600";
 
   if (analyzing || run?.status === "running") {
     panelStatus = "Reading notice...";
-    panelStatusClasses = "bg-blue-100 text-blue-800 animate-pulse";
+    panelStatusClasses = "bg-slate-100 text-slate-700 border border-slate-200";
   } else if (submittingAnswers) {
     panelStatus = "Updating draft...";
-    panelStatusClasses = "bg-amber-100 text-amber-800 animate-pulse";
+    panelStatusClasses = "bg-slate-100 text-slate-700 border border-slate-200";
   } else if (confirming) {
     panelStatus = "Saving checklist...";
-    panelStatusClasses = "bg-emerald-100 text-emerald-800 animate-pulse";
+    panelStatusClasses = "bg-slate-100 text-slate-700 border border-slate-200";
   } else if (run?.status === "error") {
     panelStatus = "Error";
-    panelStatusClasses = "bg-red-100 text-red-800";
+    panelStatusClasses = "bg-red-50 text-red-700 border border-red-200";
   } else if (run?.status === "needs_clarification") {
     panelStatus = "Needs Clarification";
-    panelStatusClasses = "bg-amber-100 text-amber-800";
+    panelStatusClasses = "bg-amber-50 text-amber-700 border border-amber-200";
   } else if (run?.status === "awaiting_approval") {
     panelStatus = "Ready for Approval";
-    panelStatusClasses = "bg-indigo-100 text-indigo-800";
+    panelStatusClasses = "bg-blue-50 text-blue-700 border border-blue-200";
   } else if (selectedDocId) {
     if (checklistLoading) {
       panelStatus = "Loading";
-      panelStatusClasses = "bg-blue-100 text-blue-800";
+      panelStatusClasses = "bg-slate-100 text-slate-600";
     } else if (checklistError) {
       panelStatus = "Unavailable";
-      panelStatusClasses = "bg-red-100 text-red-800";
+      panelStatusClasses = "bg-red-50 text-red-700 border border-red-200";
     } else if (checklist && checklist.tasks.length > 0) {
       panelStatus = "Saved";
-      panelStatusClasses = "bg-green-100 text-green-800";
+      panelStatusClasses = "bg-emerald-50 text-emerald-700 border border-emerald-200";
     } else {
       panelStatus = "No checklist";
-      panelStatusClasses = "bg-amber-100 text-amber-800";
+      panelStatusClasses = "bg-slate-100 text-slate-600";
     }
   }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white text-gray-900">
       {/* Top Application Header */}
-      <header className="h-14 border-b border-gray-200 bg-white px-4 sm:px-6 flex items-center justify-between flex-shrink-0 z-10 shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs">
-            <SparklesIcon className="w-4 h-4" />
-          </div>
-          <div>
-            <h1 className="text-sm sm:text-base font-bold text-gray-900 leading-tight">
-              AI Document-to-Action Agent
-            </h1>
-            <p className="text-[11px] text-gray-500 hidden sm:block">
-              Administrative Notice Analysis &amp; Task Checklist Verification
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Agent Active</span>
+      <header className="h-13 border-b border-slate-200 bg-white px-4 sm:px-6 flex items-center justify-between flex-shrink-0 z-10">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
+            <div className="w-7 h-7 rounded-md bg-[#1765F5] flex items-center justify-center text-white shadow-xs group-hover:bg-blue-600 transition-colors">
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="9" y1="13" x2="15" y2="13" />
+                <line x1="9" y1="17" x2="13" y2="17" />
+              </svg>
+            </div>
+            <span className="font-bold text-sm tracking-tight text-[#10264A]">
+              Doc2Action
+            </span>
+          </Link>
+
+          <span className="text-slate-300 select-none">/</span>
+
+          <span className="text-xs sm:text-sm font-medium text-slate-700 truncate max-w-[200px] sm:max-w-md">
+            {displayTitle}
           </span>
+        </div>
+
+        <div className="flex items-center gap-3 flex-shrink-0">
           {guestMode ? (
-            <Link href="/sign-in" className="text-xs font-semibold text-blue-700 hover:underline">
+            <Link
+              href="/sign-in"
+              className="text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md transition-colors"
+            >
               Sign in
             </Link>
           ) : (
@@ -314,19 +326,15 @@ export default function Home({ guestMode = false }: { guestMode?: boolean }) {
               </p>
             </div>
           ) : run?.status === "needs_clarification" && run.questions?.length > 0 ? (
-            <div className="mb-4">
-              <ClarificationForm
-                questions={run.questions}
-                submitting={submittingAnswers}
-                error={answerError}
-                onSubmit={answerQuestions}
-                onSourceRefClick={(refs) => {
-                  setHighlightedParas(refs);
-                  if (typeof window !== "undefined" && window.innerWidth < 768) {
-                    setActiveTab("chat");
-                  }
-                }}
-              />
+            <div className="mb-3 px-3 py-2 bg-amber-50/80 border border-amber-200/80 rounded-lg text-xs text-amber-800 flex items-center justify-between">
+              <span>Missing details being clarified in chat</span>
+              <button
+                type="button"
+                onClick={() => setActiveTab("chat")}
+                className="text-[11px] font-semibold text-amber-900 underline ml-2"
+              >
+                Go to chat →
+              </button>
             </div>
           ) : null}
 

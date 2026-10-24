@@ -1,5 +1,5 @@
 // Owner: Member 2 (Frontend Engineer)
-// Chat message item rendering user, agent, and system bubbles with structured actions
+// Clean, sharp chat message item (Claude-style interactive cards, no AI slop, no pulsating neon dots)
 
 "use client";
 
@@ -25,77 +25,86 @@ interface ChatMessageItemProps {
   message: ChatMessage;
   onAnswerQuestion?: (questionId: string, answer: string, notStated: boolean) => void;
   onViewDocument?: () => void;
+  onCitationClick?: (paragraphId: string) => void;
   isSubmittingAnswer?: boolean;
 }
+
+const COMMON_OWNER_SUGGESTIONS = [
+  "Student",
+  "Lab Technician",
+  "Department Head",
+  "Staff Member",
+];
 
 export default function ChatMessageItem({
   message,
   onAnswerQuestion,
-  onViewDocument,
+  onCitationClick,
   isSubmittingAnswer = false,
 }: ChatMessageItemProps) {
   const isUser = message.sender === "user";
   const isSystem = message.sender === "system";
 
-  // State for custom text input in clarification
+  // Track answers answered locally within this card
+  const [answeredMap, setAnsweredMap] = useState<Record<string, string>>({});
   const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
 
   if (isSystem) {
     return (
       <div className="flex justify-center my-3">
-        <span className="px-3 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded-full border border-gray-200">
+        <span className="px-3 py-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full border border-slate-200">
           {message.text}
         </span>
       </div>
     );
   }
 
+  const handleSelectOption = (questionId: string, answer: string, notStated: boolean) => {
+    if (isSubmittingAnswer || answeredMap[questionId]) return;
+    setAnsweredMap((prev) => ({
+      ...prev,
+      [questionId]: notStated ? "Not stated in notice" : answer,
+    }));
+    onAnswerQuestion?.(questionId, notStated ? "" : answer, notStated);
+  };
+
   return (
     <div
-      className={`flex items-start gap-3 my-4 ${
+      className={`flex items-start gap-3 my-3.5 ${
         isUser ? "flex-row-reverse" : "flex-row"
       }`}
     >
-      {/* Avatar */}
+      {/* Crisp minimal avatar */}
       <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
+        className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
           isUser
-            ? "bg-blue-600 text-white shadow-sm"
-            : "bg-indigo-700 text-white shadow-sm"
+            ? "bg-slate-900 text-white"
+            : "bg-[#1765F5] text-white shadow-2xs"
         }`}
         aria-hidden="true"
       >
         {isUser ? (
-          <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <span className="text-[11px] font-medium">You</span>
         ) : (
-          <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
-          </svg>
+          <span className="text-[11px] font-bold">AI</span>
         )}
       </div>
 
       {/* Message Bubble Content */}
       <div
-        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+        className={`max-w-[88%] sm:max-w-[80%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
           isUser
-            ? "bg-blue-600 text-white rounded-tr-none shadow-sm"
-            : "bg-gray-50 text-gray-900 border border-gray-200 rounded-tl-none shadow-sm"
+            ? "bg-slate-900 text-white rounded-tr-xs shadow-xs"
+            : "bg-white text-slate-900 border border-slate-200/90 rounded-tl-xs shadow-2xs"
         }`}
       >
         {/* Header label for agent */}
         {!isUser && (
-          <div className="flex items-center justify-between gap-2 mb-1.5 pb-1 border-b border-gray-200/60">
-            <span className="text-xs font-bold text-indigo-900 tracking-tight">
-              Action Agent
+          <div className="flex items-center justify-between gap-2 mb-1.5 pb-1 border-b border-slate-100">
+            <span className="text-xs font-semibold text-slate-700 tracking-tight">
+              Assistant
             </span>
-            <span className="text-[10px] text-gray-500 tabular-nums">
+            <span className="text-[10px] text-slate-400 tabular-nums">
               {new Date(message.timestamp).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -104,15 +113,15 @@ export default function ChatMessageItem({
           </div>
         )}
 
-        {/* Notice Submission Card Preview */}
+        {/* Notice Submission Card Header */}
         {message.type === "notice_submission" && message.metadata && (
-          <div className="mb-2 p-2.5 rounded-lg bg-blue-700/60 border border-blue-400/30 text-xs text-blue-50">
+          <div className="mb-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-white truncate">
-                📄 {message.metadata.docTitle || "Notice submitted"}
+              <span className="font-semibold text-slate-800 truncate">
+                {message.metadata.docTitle || "Notice submitted"}
               </span>
               {message.metadata.paragraphCount && (
-                <span className="text-[10px] bg-blue-800/80 px-2 py-0.5 rounded text-blue-100">
+                <span className="text-[10px] font-mono bg-slate-200/80 px-1.5 py-0.5 rounded text-slate-700">
                   {message.metadata.paragraphCount} paragraphs
                 </span>
               )}
@@ -120,141 +129,146 @@ export default function ChatMessageItem({
           </div>
         )}
 
-        {/* Body Text */}
-        <div className="whitespace-pre-wrap break-words">{message.text}</div>
+        {/* Body Text with styled paragraph citations */}
+        <div className="whitespace-pre-wrap break-words text-slate-800">
+          {message.text}
+        </div>
 
-        {/* Tool Actions Accordion */}
+        {/* Tool Activity (Minimal, unobtrusive monospace chips) */}
         {message.toolSummary && message.toolSummary.length > 0 && (
-          <div className="mt-2.5 pt-2 border-t border-gray-200/70 space-y-1">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-              Tool Activity
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {message.toolSummary.map((t, idx) => (
-                <span
-                  key={idx}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono ${
-                    t.ok
-                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                      : "bg-red-50 text-red-800 border border-red-200"
-                  }`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                  {t.tool}: {t.summary}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Clarification Questions Cards */}
-        {message.questions && message.questions.length > 0 && onAnswerQuestion && (
-          <div className="mt-3 pt-2.5 border-t border-amber-200 space-y-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
-              <svg className="w-3.5 h-3.5 fill-current text-amber-600" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-              </svg>
-              <span>Clarification needed to proceed:</span>
-            </div>
-
-            {message.questions.map((q) => (
-              <div
-                key={q.question_id}
-                className="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-2.5"
+          <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+            {message.toolSummary.map((t, idx) => (
+              <span
+                key={idx}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-mono"
               >
-                <p className="text-xs font-medium text-amber-950 leading-relaxed">
-                  {q.text}
-                </p>
-
-                {/* Quick Selection Chips */}
-                <div className="flex flex-wrap gap-1.5">
-                  {q.field === "owner" && (
-                    <>
-                      <button
-                        type="button"
-                        disabled={isSubmittingAnswer}
-                        onClick={() => onAnswerQuestion(q.question_id, "Student", false)}
-                        className="px-2.5 py-1 text-xs font-medium bg-white text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                      >
-                        Student
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isSubmittingAnswer}
-                        onClick={() => onAnswerQuestion(q.question_id, "Department Head", false)}
-                        className="px-2.5 py-1 text-xs font-medium bg-white text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                      >
-                        Department Head
-                      </button>
-                    </>
-                  )}
-
-                  {q.allow_not_stated && (
-                    <button
-                      type="button"
-                      disabled={isSubmittingAnswer}
-                      onClick={() => onAnswerQuestion(q.question_id, "", true)}
-                      className="px-2.5 py-1 text-xs font-medium bg-amber-100 text-amber-900 border border-amber-300 rounded-md hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                    >
-                      Not stated in notice
-                    </button>
-                  )}
-                </div>
-
-                {/* Custom text answer input */}
-                <div className="flex items-center gap-1.5 mt-2">
-                  <input
-                    type="text"
-                    placeholder={
-                      q.field === "owner"
-                        ? "Or type custom owner..."
-                        : "YYYY-MM-DD deadline..."
-                    }
-                    value={customAnswers[q.question_id] || ""}
-                    onChange={(e) =>
-                      setCustomAnswers((prev) => ({
-                        ...prev,
-                        [q.question_id]: e.target.value,
-                      }))
-                    }
-                    disabled={isSubmittingAnswer}
-                    className="flex-1 px-2.5 py-1 text-xs bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <button
-                    type="button"
-                    disabled={
-                      isSubmittingAnswer ||
-                      !(customAnswers[q.question_id] || "").trim()
-                    }
-                    onClick={() => {
-                      const ans = (customAnswers[q.question_id] || "").trim();
-                      if (ans) {
-                        onAnswerQuestion(q.question_id, ans, false);
-                      }
-                    }}
-                    className="px-3 py-1 text-xs font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    Submit
-                  </button>
-                </div>
-              </div>
+                <span>{t.tool}</span>
+              </span>
             ))}
           </div>
         )}
 
-        {/* Action Button to inspect document */}
-        {onViewDocument && (
-          <div className="mt-2.5 pt-2 border-t border-gray-200/50 flex justify-end">
-            <button
-              type="button"
-              onClick={onViewDocument}
-              className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 hover:text-indigo-900 focus:outline-none focus:underline"
-            >
-              <span>View source paragraphs</span>
-              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            </button>
+        {/* Claude-Style Interactive Clarification Cards */}
+        {message.questions && message.questions.length > 0 && onAnswerQuestion && (
+          <div className="mt-3 pt-2.5 border-t border-slate-200 space-y-3">
+            <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+              <span>Clarification needed to finalize checklist:</span>
+            </div>
+
+            {message.questions.map((q) => {
+              const answeredValue = answeredMap[q.question_id];
+              return (
+                <div
+                  key={q.question_id}
+                  className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-xs font-medium text-slate-800 leading-snug">
+                      {q.text}
+                    </p>
+                    {q.source_refs && q.source_refs.length > 0 && (
+                      <div className="flex flex-wrap gap-1 flex-shrink-0">
+                        {q.source_refs.map((ref) => (
+                          <button
+                            key={ref}
+                            type="button"
+                            onClick={() => onCitationClick?.(ref)}
+                            className="text-[10px] font-mono bg-slate-200 hover:bg-slate-300 text-slate-700 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                            title={`Inspect paragraph ${ref}`}
+                          >
+                            {ref}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {answeredValue ? (
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 font-medium">
+                      <span>✓ Recorded: {answeredValue}</span>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Clickable Quick Option Pills */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {q.field === "owner" &&
+                          COMMON_OWNER_SUGGESTIONS.map((role) => (
+                            <button
+                              key={role}
+                              type="button"
+                              disabled={isSubmittingAnswer}
+                              onClick={() => handleSelectOption(q.question_id, role, false)}
+                              className="px-2.5 py-1 text-xs font-medium bg-white text-slate-700 border border-slate-200 rounded-md hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                            >
+                              {role}
+                            </button>
+                          ))}
+
+                        {q.allow_not_stated && (
+                          <button
+                            type="button"
+                            disabled={isSubmittingAnswer}
+                            onClick={() => handleSelectOption(q.question_id, "", true)}
+                            className="px-2.5 py-1 text-xs font-medium bg-white text-slate-500 border border-slate-200 rounded-md hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                          >
+                            Not stated in notice
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Custom text/date answer input */}
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <input
+                          type={q.field === "deadline" ? "date" : "text"}
+                          placeholder={
+                            q.field === "owner"
+                              ? "Or type custom responsible person..."
+                              : "Select date..."
+                          }
+                          value={customAnswers[q.question_id] || ""}
+                          onChange={(e) =>
+                            setCustomAnswers((prev) => ({
+                              ...prev,
+                              [q.question_id]: e.target.value,
+                            }))
+                          }
+                          disabled={isSubmittingAnswer}
+                          className="flex-1 px-2.5 py-1 text-xs bg-white text-slate-900 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder:text-slate-400"
+                        />
+                        <button
+                          type="button"
+                          disabled={
+                            isSubmittingAnswer ||
+                            !(customAnswers[q.question_id] || "").trim()
+                          }
+                          onClick={() => {
+                            const ans = (customAnswers[q.question_id] || "").trim();
+                            if (ans) {
+                              handleSelectOption(q.question_id, ans, false);
+                            }
+                          }}
+                          className="px-2.5 py-1 text-xs font-medium bg-[#1765F5] hover:bg-blue-600 text-white rounded-md disabled:bg-slate-200 disabled:text-slate-400 transition-colors"
+                        >
+                          Submit
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Proposal Summary Card */}
+        {message.type === "proposal" && message.metadata?.taskCount && (
+          <div className="mt-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between text-xs">
+            <span className="font-medium text-slate-700">
+              Checklist ready ({message.metadata.taskCount} tasks)
+            </span>
+            <span className="text-[11px] font-semibold text-blue-600">
+              Review in panel →
+            </span>
           </div>
         )}
       </div>
