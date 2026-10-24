@@ -79,6 +79,12 @@ export default function Navbar() {
               Saved Notices
             </Link>
             <Link
+              href="/sign-in"
+              className="text-xs font-semibold text-slate-700 hover:text-blue-600 px-3 py-1.5 transition-colors"
+            >
+              Log in
+            </Link>
+            <Link
               href="/app"
               className="inline-flex items-center justify-center text-[13px] font-semibold text-white bg-[#1765F5] hover:bg-blue-600 active:bg-blue-700 px-4 py-2 rounded-lg shadow-xs shadow-blue-600/20 transition-all hover:shadow-sm"
             >
@@ -178,6 +184,13 @@ export default function Navbar() {
             className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
           >
             Saved Notices
+          </Link>
+          <Link
+            href="/sign-in"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
+          >
+            Log in
           </Link>
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             <Link

@@ -227,11 +227,19 @@ export async function runAgent(params: AgentParams): Promise<AgentResult> {
     const existingChecklistContext =
       readRes.tasks.length > 0
         ? readRes.tasks
-            .map((t) => `- Task ${t.task_id}: ${t.description}`)
-            .join("\n")
+            .map((t, idx) => {
+              const id = t.task_id || `Task-${idx + 1}`;
+              const lines = [`• [${id}] ${t.description}`];
+              lines.push(`  Owner: ${t.owner || "[Not specified / unassigned]"}`);
+              lines.push(`  Deadline: ${t.deadline_date || t.deadline_text || "[No deadline specified]"}`);
+              if (t.condition) lines.push(`  Condition/Exemption: ${t.condition}`);
+              if (t.source_refs && t.source_refs.length > 0) lines.push(`  Sources: ${t.source_refs.join(", ")}`);
+              return lines.join("\n");
+            })
+            .join("\n\n")
         : "No existing checklist tasks.";
 
-    let userContext = `Document ID: ${params.docId}\n\nDocument Paragraphs:\n${paragraphsFormatted}\n\nSearch Tool Findings:\n${searchContext}\n\nExisting Checklist:\n${existingChecklistContext}\n\nUser Request: ${params.request}`;
+    let userContext = `Document ID: ${params.docId}\n\nDocument Paragraphs:\n${paragraphsFormatted}\n\nSearch Tool Findings:\n${searchContext}\n\nExisting Checklist Tasks:\n${existingChecklistContext}\n\nUser Request: ${params.request}\n\nInstructions:\n- If the user is asking about the checklist or its issues, evaluate the Existing Checklist Tasks against the Document Paragraphs.\n- In answers_to_request, directly answer the user's question, pointing out any specific gaps, missing deadlines, unassigned owners, or unextracted requirements.\n- Update or add tasks in the proposal to resolve the user's request.`;
 
     if (params.answers && params.answers.length > 0) {
       const formattedAnswers = params.answers

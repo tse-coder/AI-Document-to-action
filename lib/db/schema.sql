@@ -13,6 +13,7 @@ CREATE TABLE documents (
   id         TEXT PRIMARY KEY,
   title      TEXT NOT NULL CHECK (length(trim(title)) BETWEEN 1 AND 80),
   origin     TEXT NOT NULL CHECK (origin IN ('demo', 'pasted')),
+  user_id    TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CHECK (
     (origin = 'demo'   AND id ~ '^N[0-9].*$') OR
@@ -21,6 +22,7 @@ CREATE TABLE documents (
 );
 
 CREATE INDEX idx_documents_origin_created ON documents (origin, created_at);
+CREATE INDEX idx_documents_user ON documents (user_id);
 
 ------------------------------------------------------------------
 -- paragraphs: numbered original text, immutable so citations never drift
@@ -54,6 +56,7 @@ FOR EACH ROW EXECUTE FUNCTION paragraphs_immutable_fn();
 CREATE TABLE runs (
   id                TEXT PRIMARY KEY,
   doc_id            TEXT NOT NULL REFERENCES documents (id) ON DELETE CASCADE,
+  user_id           TEXT,
   status            TEXT NOT NULL DEFAULT 'running'
                     CHECK (status IN ('running', 'needs_clarification', 'awaiting_approval', 'saved', 'error')),
   request           TEXT NOT NULL CHECK (length(trim(request)) BETWEEN 3 AND 500),
@@ -80,6 +83,7 @@ CREATE TABLE runs (
 );
 
 CREATE INDEX idx_runs_doc ON runs (doc_id);
+CREATE INDEX idx_runs_user ON runs (user_id);
 CREATE INDEX idx_runs_status_updated ON runs (status, updated_at);
 
 -- The status machine is enforced by the database as well as the application.

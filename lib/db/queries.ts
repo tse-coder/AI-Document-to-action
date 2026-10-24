@@ -46,16 +46,28 @@ function documentFromRow(row: Record<string, unknown>): Document {
 
 // --- Document queries ---
 
-export async function getDocuments(): Promise<Document[]> {
-  const rows = await sql`
-    SELECT d.id AS doc_id, d.title, d.origin,
-           (SELECT count(*)::int FROM paragraphs p WHERE p.doc_id = d.id) AS paragraph_count,
-           ${sql.unsafe(utc("d.created_at"))} AS created_at
-    FROM documents d
-    ORDER BY CASE WHEN d.origin = 'demo' THEN 0 ELSE 1 END,
-             CASE WHEN d.origin = 'pasted' THEN d.created_at END DESC,
-             d.id
-  `;
+export async function getDocuments(userId?: string | null): Promise<Document[]> {
+  const rows = userId
+    ? await sql`
+        SELECT d.id AS doc_id, d.title, d.origin,
+               (SELECT count(*)::int FROM paragraphs p WHERE p.doc_id = d.id) AS paragraph_count,
+               ${sql.unsafe(utc("d.created_at"))} AS created_at
+        FROM documents d
+        WHERE d.origin = 'demo' OR d.user_id = ${userId}
+        ORDER BY CASE WHEN d.origin = 'demo' THEN 0 ELSE 1 END,
+                 CASE WHEN d.origin = 'pasted' THEN d.created_at END DESC,
+                 d.id
+      `
+    : await sql`
+        SELECT d.id AS doc_id, d.title, d.origin,
+               (SELECT count(*)::int FROM paragraphs p WHERE p.doc_id = d.id) AS paragraph_count,
+               ${sql.unsafe(utc("d.created_at"))} AS created_at
+        FROM documents d
+        WHERE d.origin = 'demo' OR d.user_id IS NULL
+        ORDER BY CASE WHEN d.origin = 'demo' THEN 0 ELSE 1 END,
+                 CASE WHEN d.origin = 'pasted' THEN d.created_at END DESC,
+                 d.id
+      `;
   return rows.map((row) => documentFromRow(row));
 }
 
@@ -84,7 +96,11 @@ export async function getDocumentWithParagraphs(
   };
 }
 
-export async function createDocument(text: string, title?: string): Promise<Document> {
+export async function createDocument(
+  text: string,
+  title?: string,
+  userId?: string | null
+): Promise<Document> {
   const paragraphs = splitParagraphs(text);
   if (paragraphs.length < 1 || paragraphs.length > 40) {
     throw new Error("Pasted text must contain between 1 and 40 paragraphs.");
@@ -96,7 +112,7 @@ export async function createDocument(text: string, title?: string): Promise<Docu
     const id = pastedDocId();
     try {
       await sql.begin(async (tx) => {
-        await tx`INSERT INTO documents (id, title, origin) VALUES (${id}, ${safeTitle}, 'pasted')`;
+        await tx`INSERT INTO documents (id, title, origin, user_id) VALUES (${id}, ${safeTitle}, 'pasted', ${userId ?? null})`;
         await tx`
           INSERT INTO paragraphs (id, doc_id, position, text)
           SELECT ${id} || '-P' || item.position, ${id}, item.position, item.text
@@ -188,6 +204,37 @@ export async function readChecklist(docId: string): Promise<ReadChecklistResult>
     owner: row.owner == null ? null : String(row.owner),
     status: row.status as ReadChecklistTask["status"],
   }));
+
+  // If no confirmed tasks in checklist_tasks, check for draft proposal tasks in the latest run!
+  if (tasks.length === 0) {
+    try {
+      const [latestProposalRun] = await sql`
+        SELECT proposal FROM runs
+        WHERE doc_id = ${docId} AND proposal IS NOT NULL AND status IN ('awaiting_approval', 'saved', 'needs_clarification')
+        ORDER BY updated_at DESC, created_at DESC
+        LIMIT 1
+      `;
+      if (latestProposalRun?.proposal && typeof latestProposalRun.proposal === "object") {
+        const prop = latestProposalRun.proposal as Record<string, unknown>;
+        if (Array.isArray(prop.tasks) && prop.tasks.length > 0) {
+          const draftTasks: ReadChecklistTask[] = prop.tasks.map((t: any, idx: number) => ({
+            task_id: String(t.task_id || t.client_id || `DRAFT-T${idx + 1}`),
+            description: String(t.description || ""),
+            source_refs: Array.isArray(t.source_refs) ? t.source_refs.map(String) : [],
+            deadline_date: t.deadline_date ? String(t.deadline_date) : null,
+            deadline_text: t.deadline_text == null ? null : String(t.deadline_text),
+            condition: t.condition == null ? null : String(t.condition),
+            owner: t.owner == null ? null : String(t.owner),
+            status: "open",
+          }));
+          return { doc_id: docId, tasks: draftTasks };
+        }
+      }
+    } catch {
+      // Ignore if runs table query fails or is empty
+    }
+  }
+
   return { doc_id: docId, tasks };
 }
 
@@ -196,12 +243,13 @@ export async function readChecklist(docId: string): Promise<ReadChecklistResult>
 export async function createRun(
   docId: string,
   request: string,
-  simulateFailure: "none" | "model" | "tool" = "none"
+  simulateFailure: "none" | "model" | "tool" = "none",
+  userId?: string | null
 ): Promise<Run> {
   const id = runId();
   await sql`
-    INSERT INTO runs (id, doc_id, request, round, simulate_failure)
-    VALUES (${id}, ${docId}, ${request}, 1, ${simulateFailure})
+    INSERT INTO runs (id, doc_id, request, round, simulate_failure, user_id)
+    VALUES (${id}, ${docId}, ${request}, 1, ${simulateFailure}, ${userId ?? null})
   `;
   const run = await getRunById(id);
   if (!run) throw new Error("New run could not be read after insert.");
@@ -513,13 +561,22 @@ export async function recordAnswers(
 
 // --- Saved checklist reads ---
 
-export async function getChecklists(): Promise<ChecklistSummary[]> {
-  const rows = await sql`
-    SELECT d.id AS doc_id, d.title, count(t.id)::int AS task_count,
-           ${sql.unsafe(utc("max(t.updated_at)"))} AS last_saved_at
-    FROM documents d JOIN checklist_tasks t ON t.doc_id = d.id
-    GROUP BY d.id, d.title ORDER BY max(t.updated_at) DESC, d.id
-  `;
+export async function getChecklists(userId?: string | null): Promise<ChecklistSummary[]> {
+  const rows = userId
+    ? await sql`
+        SELECT d.id AS doc_id, d.title, count(t.id)::int AS task_count,
+               ${sql.unsafe(utc("max(t.updated_at)"))} AS last_saved_at
+        FROM documents d JOIN checklist_tasks t ON t.doc_id = d.id
+        WHERE d.origin = 'demo' OR d.user_id = ${userId}
+        GROUP BY d.id, d.title ORDER BY max(t.updated_at) DESC, d.id
+      `
+    : await sql`
+        SELECT d.id AS doc_id, d.title, count(t.id)::int AS task_count,
+               ${sql.unsafe(utc("max(t.updated_at)"))} AS last_saved_at
+        FROM documents d JOIN checklist_tasks t ON t.doc_id = d.id
+        WHERE d.origin = 'demo' OR d.user_id IS NULL
+        GROUP BY d.id, d.title ORDER BY max(t.updated_at) DESC, d.id
+      `;
   return rows.map((row) => ({
     doc_id: String(row.doc_id), title: String(row.title),
     task_count: Number(row.task_count), last_saved_at: String(row.last_saved_at),

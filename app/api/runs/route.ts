@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApiRequestError, errorResponse, parseJson } from "../../../lib/api-response";
 import { createDocument, createRun, getDocumentWithParagraphs } from "../../../lib/db/queries";
 import { runAgentPass } from "../../../lib/run-service";
+import { requireApiAuth, getOptionalUserId } from "../../../lib/require-api-auth";
 import type { CreateRunRequest } from "../../../lib/types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -12,6 +13,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireApiAuth();
+  if (authError) return authError;
+
   try {
     const raw = await parseJson(request);
     if (!isRecord(raw)) throw new ApiRequestError("INVALID_JSON", "Request body must be a JSON object.", 400);
@@ -47,6 +51,8 @@ export async function POST(request: NextRequest) {
     }
     if (details.length) throw new ApiRequestError("INVALID_REQUEST", "One or more request fields are invalid.", 400, details);
 
+    const userId = await getOptionalUserId();
+
     let docId: string;
     if (hasText) {
       const paragraphCount = body.text!.split(/\n\s*\n/u).map((p) => p.trim()).filter(Boolean).length;
@@ -55,7 +61,7 @@ export async function POST(request: NextRequest) {
           { field: "text", message: "Pasted text must contain between 1 and 40 paragraphs." },
         ]);
       }
-      const document = await createDocument(body.text!, body.title);
+      const document = await createDocument(body.text!, body.title, userId);
       docId = document.doc_id;
     } else {
       docId = body.doc_id!.trim();
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const run = await createRun(docId, body.request!, body.simulate_failure as CreateRunRequest["simulate_failure"]);
+    const run = await createRun(docId, body.request!, body.simulate_failure as CreateRunRequest["simulate_failure"], userId);
     const updated = await runAgentPass(run);
     return NextResponse.json({ ok: true, data: { run: updated } });
   } catch (error) {

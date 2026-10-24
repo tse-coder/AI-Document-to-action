@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApiRequestError, errorResponse, parseJson } from "../../../../../lib/api-response";
 import { getRunById, recordAnswers } from "../../../../../lib/db/queries";
 import { runAgentPass } from "../../../../../lib/run-service";
+import { requireApiAuth } from "../../../../../lib/require-api-auth";
 import type { AnswerInput } from "../../../../../lib/types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -21,6 +22,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ runId: string }> }
 ) {
+  const authError = await requireApiAuth();
+  if (authError) return authError;
   const { runId } = await params;
   let runExists = false;
 

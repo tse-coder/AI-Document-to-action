@@ -52,8 +52,11 @@ export class ApiError extends Error {
 }
 
 const BASE = "/api";
-// FE-14: Real endpoints are used by default; mock mode is active only when NEXT_PUBLIC_USE_MOCK is explicitly "true"
-const isMock = () => process.env.NEXT_PUBLIC_USE_MOCK === "true";
+// Guest mode is a local demo and must never call protected API routes.
+// The environment flag remains available for development-wide mock mode.
+const isMock = () =>
+  process.env.NEXT_PUBLIC_USE_MOCK === "true" ||
+  (typeof window !== "undefined" && window.location.pathname.startsWith("/guest"));
 
 const delay = (ms = 250): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -263,7 +266,8 @@ export interface ChatMessage {
 export async function sendChatMessage(
   docId: string,
   message: string,
-  history: ChatMessage[] = []
+  history: ChatMessage[] = [],
+  checklistTasks?: unknown[]
 ): Promise<{ answer: string; cited_paragraphs: string[] }> {
   if (isMock()) {
     await delay(250);
@@ -274,7 +278,7 @@ export async function sendChatMessage(
   }
   return request("/chat", {
     method: "POST",
-    body: JSON.stringify({ doc_id: docId, message, history }),
+    body: JSON.stringify({ doc_id: docId, message, history, checklist_tasks: checklistTasks }),
   });
 }
 
