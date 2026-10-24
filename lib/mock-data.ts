@@ -453,6 +453,19 @@ export const mockChecklistDetailN1: ChecklistDetail = {
   ],
 };
 
+// N2 has no saved checklist yet, matching GET /api/checklists/:docId
+export const mockChecklistDetailN2: ChecklistDetail = {
+  doc_id: "N2",
+  title: "Lab Equipment Borrowing Procedure",
+  last_saved_at: "2026-10-24T06:00:00Z",
+  tasks: [],
+};
+
+export const mockChecklistDetailsByDocId: Record<string, ChecklistDetail> = {
+  N1: mockChecklistDetailN1,
+  N2: mockChecklistDetailN2,
+};
+
 // --- Mock Confirm Response ---
 
 export const mockConfirmResponse: ConfirmResponse = {
