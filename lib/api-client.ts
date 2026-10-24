@@ -216,3 +216,46 @@ export async function getChecklist(docId: string): Promise<ChecklistDetail> {
   }
   return request(`/checklists/${docId}`);
 }
+
+export async function deleteChecklist(
+  docId: string
+): Promise<{ doc_id: string; deleted: boolean }> {
+  if (isMock()) {
+    await delay();
+    if (mockChecklistDetailsByDocId[docId]) {
+      delete mockChecklistDetailsByDocId[docId];
+    }
+    return { doc_id: docId, deleted: true };
+  }
+  return request(`/checklists/${encodeURIComponent(docId)}`, {
+    method: "DELETE",
+  });
+}
+
+// --- Notice Assistant Chat ---
+
+export interface ChatMessage {
+  id?: string;
+  role: "user" | "assistant";
+  content: string;
+  cited_paragraphs?: string[];
+}
+
+export async function sendChatMessage(
+  docId: string,
+  message: string,
+  history: ChatMessage[] = []
+): Promise<{ answer: string; cited_paragraphs: string[] }> {
+  if (isMock()) {
+    await delay(250);
+    return {
+      answer: `Based on paragraph [N1-P2], the notice specifies: "${message.slice(0, 80)}". Please verify instructions with the department.`,
+      cited_paragraphs: ["N1-P2"],
+    };
+  }
+  return request("/chat", {
+    method: "POST",
+    body: JSON.stringify({ doc_id: docId, message, history }),
+  });
+}
+

@@ -10,6 +10,7 @@ import {
   ApiError,
   confirmRun,
   createRun,
+  deleteChecklist,
   getChecklist,
   getDocument,
   getDocuments,
@@ -470,6 +471,27 @@ export function useWorkspace() {
     };
   }, [loadDocuments]);
 
+  const deleteSavedChecklist = useCallback(
+    async (docId: string) => {
+      try {
+        await deleteChecklist(docId);
+        setChecklist({
+          doc_id: docId,
+          title: activeDocument?.title ?? "Notice",
+          last_saved_at: null,
+          tasks: [],
+        });
+        setSaveSuccessMessage("Checklist deleted successfully.");
+        void loadDocuments();
+      } catch (err) {
+        setChecklistError(
+          friendlyMessage(err, "Could not delete checklist. Please try again.")
+        );
+      }
+    },
+    [activeDocument?.title, loadDocuments]
+  );
+
   return {
     documents,
     documentsLoading,
@@ -482,6 +504,7 @@ export function useWorkspace() {
     checklist,
     checklistLoading,
     checklistError,
+    deleteSavedChecklist,
     run,
     setRun,
     analyzing,
