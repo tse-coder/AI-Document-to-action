@@ -57,3 +57,6 @@ coverage/
 .agents/
 *.skill
 
+# Local working plans
+AGENT-PLAN.md
+
