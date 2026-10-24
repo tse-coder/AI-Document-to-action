@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AI Document to Action — Team 10",
   description:
-    "Turn administrative notices into actionable, traceable checklists.",
+    "Turn administrative notices into actionable, traceable checklists with source references.",
 };
 
 export default function RootLayout({
@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased min-h-screen bg-gray-50 text-gray-900">
+    <html lang="en" className="h-full">
+      <body className="h-full antialiased bg-gray-50 text-gray-900 font-sans">
         {children}
       </body>
     </html>
