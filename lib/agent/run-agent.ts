@@ -3,14 +3,34 @@
 // Owner: Member 3 (AI Agent Engineer)
 // =============================================
 
-import { generateText, generateObject, tool, type CoreMessage } from "ai";
+import dns from "node:dns";
+
+// Ensure IPv4 resolution in environments where IPv6 route hangs or is unreachable
+if (typeof dns.setDefaultResultOrder === "function") {
+  dns.setDefaultResultOrder("ipv4first");
+}
+const origLookup = dns.lookup;
+// @ts-expect-error DNS patch for undici/fetch IPv6 timeout
+dns.lookup = function (hostname: string, options: unknown, callback?: unknown) {
+  const cb = (typeof options === "function" ? options : callback) as (
+    err: NodeJS.ErrnoException | null,
+    address: string,
+    family: number
+  ) => void;
+  const opts = typeof options === "object" && options !== null ? options : {};
+  return (origLookup as unknown as (...args: unknown[]) => unknown).call(
+    dns,
+    hostname,
+    { ...opts, family: 4 },
+    cb
+  );
+};
+
+import { generateObject, type CoreMessage } from "ai";
 import { google } from "@ai-sdk/google";
 import { SYSTEM_PROMPT } from "./system-prompt";
-import {
-  searchDocumentParams,
-  readChecklistParams,
-  saveChecklistChangesParams,
-} from "./tools";
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 import { finalizeSchema, type FinalizeOutput } from "./schemas";
 import { validateProposal } from "./validator";
 import type {
@@ -18,7 +38,6 @@ import type {
   Proposal,
   Question,
   ToolLogEntry,
-  RunLimits,
   DeadlineSource,
   OwnerSource,
 } from "../types";
@@ -130,125 +149,117 @@ export async function runAgent(params: AgentParams): Promise<AgentResult> {
     });
   }
 
-  try {
-    // 3. Multi-turn Agent Tool Loop (max 4 turns)
-    const agentTools = {
-      search_document: tool({
-        description:
-          "Search the document paragraphs by keyword to find required actions, deadlines, conditions, or fees.",
-        parameters: searchDocumentParams,
-        execute: async (args) => {
-          if (params.simulateFailure === "tool") {
-            throw new Error("Simulated tool error for evaluation");
-          }
-          const start = Date.now();
-          toolCallsUsed++;
-          const result = await params.searchDocument({
-            doc_id: args.doc_id,
-            query: args.query,
-            max_results: args.max_results ?? 5,
-          });
-          const duration = Date.now() - start;
-
-          toolLog.push({
-            seq: seqCounter++,
-            phase: "loop",
-            tool: "search_document",
-            args: args as Record<string, unknown>,
-            ok: true,
-            result_summary: `${result.matches.length} paragraphs matched`,
-            result: result as unknown as Record<string, unknown>,
-            duration_ms: duration,
-            at: new Date().toISOString(),
-          });
-
-          return result;
+  if (params.simulateFailure === "tool") {
+    return {
+      status: "error",
+      proposal: null,
+      questions: [],
+      toolLog: [
+        {
+          seq: seqCounter++,
+          phase: "loop",
+          tool: "search_document",
+          args: { doc_id: params.docId, query: "deadline" },
+          ok: false,
+          result_summary: "Simulated tool error for evaluation",
+          result: null,
+          duration_ms: 1,
+          at: new Date().toISOString(),
         },
-      }),
-
-      read_checklist: tool({
-        description:
-          "Read existing saved checklist tasks for this document to avoid duplicates and propose updates.",
-        parameters: readChecklistParams,
-        execute: async (args) => {
-          const start = Date.now();
-          toolCallsUsed++;
-          const result = await params.readChecklist({ doc_id: args.doc_id });
-          const duration = Date.now() - start;
-
-          toolLog.push({
-            seq: seqCounter++,
-            phase: "loop",
-            tool: "read_checklist",
-            args: args as Record<string, unknown>,
-            ok: true,
-            result_summary: `${result.tasks.length} existing tasks`,
-            result: result as unknown as Record<string, unknown>,
-            duration_ms: duration,
-            at: new Date().toISOString(),
-          });
-
-          return result;
-        },
-      }),
-
-      save_checklist_changes: tool({
-        description:
-          "Save approved checklist tasks to the remote database. (Gated: requires user approval).",
-        parameters: saveChecklistChangesParams,
-        execute: async (args) => {
-          // SAFETY GATE: Intercept direct saves during loop
-          toolCallsUsed++;
-          toolLog.push({
-            seq: seqCounter++,
-            phase: "gate",
-            tool: "save_checklist_changes",
-            args: args as Record<string, unknown>,
-            ok: false,
-            result_summary: "Blocked by safety gate",
-            result: { blocked: "Awaiting user approval" },
-            duration_ms: 1,
-            at: new Date().toISOString(),
-          });
-
-          return { blocked: "Awaiting user approval" };
-        },
-      }),
+      ],
+      messages: [],
+      limitsUsed: { modelTurns: 0, toolCalls: 1 },
+      error: { code: "TOOL_FAILURE", message: "Simulated tool error for evaluation" },
     };
+  }
 
-    // Run tool-calling loop (Max 4 steps / turns)
-    const loopResult = await generateText({
-      model: google("gemini-2.5-flash"),
-      system: SYSTEM_PROMPT,
-      messages,
-      tools: agentTools,
-      maxSteps: 4,
+  try {
+    // 2. Tool Call 1: search_document
+    const searchStart = Date.now();
+    toolCallsUsed++;
+    const searchRes = await params.searchDocument({
+      doc_id: params.docId,
+      query: params.request || "requirements deadline form submit action",
+      max_results: 5,
+    });
+    const searchDuration = Date.now() - searchStart;
+
+    toolLog.push({
+      seq: seqCounter++,
+      phase: "loop",
+      tool: "search_document",
+      args: { doc_id: params.docId, query: params.request, max_results: 5 },
+      ok: true,
+      result_summary: `${searchRes.matches.length} paragraphs matched`,
+      result: searchRes as unknown as Record<string, unknown>,
+      duration_ms: searchDuration,
+      at: new Date().toISOString(),
     });
 
-    const modelTurnsUsed = loopResult.steps.length;
+    // 3. Tool Call 2: read_checklist
+    const readStart = Date.now();
+    toolCallsUsed++;
+    const readRes = await params.readChecklist({ doc_id: params.docId });
+    const readDuration = Date.now() - readStart;
 
-    // 4. Finalize Call (Structured JSON Output via Gemini)
-    const finalizeStart = Date.now();
+    toolLog.push({
+      seq: seqCounter++,
+      phase: "loop",
+      tool: "read_checklist",
+      args: { doc_id: params.docId },
+      ok: true,
+      result_summary: `${readRes.tasks.length} existing tasks`,
+      result: readRes as unknown as Record<string, unknown>,
+      duration_ms: readDuration,
+      at: new Date().toISOString(),
+    });
+
+    // 4. Format prompt with document paragraphs and tool discoveries
+    const pTexts = params.paragraphTexts || new Map<string, string>();
+    const paragraphsFormatted = Array.from(pTexts.entries())
+      .map(([pId, text]) => `[${pId}]: ${text}`)
+      .join("\n\n");
+
+    const searchContext = searchRes.matches
+      .map((m) => `Match [${m.paragraph_id}] (Score ${m.score}): ${m.text}`)
+      .join("\n");
+
+    const existingChecklistContext =
+      readRes.tasks.length > 0
+        ? readRes.tasks
+            .map((t) => `- Task ${t.task_id}: ${t.description}`)
+            .join("\n")
+        : "No existing checklist tasks.";
+
+    let userContext = `Document ID: ${params.docId}\n\nDocument Paragraphs:\n${paragraphsFormatted}\n\nSearch Tool Findings:\n${searchContext}\n\nExisting Checklist:\n${existingChecklistContext}\n\nUser Request: ${params.request}`;
+
+    if (params.answers && params.answers.length > 0) {
+      const formattedAnswers = params.answers
+        .map(
+          (a) =>
+            `Question ${a.questionId}: ${
+              a.notStated ? "[Not stated in document]" : a.answer
+            }`
+        )
+        .join("\n");
+      userContext += `\n\nClarification Answers provided by user:\n${formattedAnswers}\nPlease update the draft proposal accordingly.`;
+    }
+
     const finalizeMessages: CoreMessage[] = [
-      ...messages,
-      {
-        role: "assistant",
-        content: loopResult.text || "I have analyzed the document and retrieved the relevant sections.",
-      },
       {
         role: "user",
-        content:
-          "Now formulate the final proposal. Output the summary, extracted tasks with source paragraph IDs, and absent information in the required structured format.",
+        content: userContext,
       },
     ];
 
+    // 5. Finalize Call (Structured JSON Output via Gemini)
+    const finalizeStart = Date.now();
     const finalizeResult = await generateObject({
-      model: google("gemini-2.5-flash"),
+      model: google(GEMINI_MODEL),
       system: SYSTEM_PROMPT,
       messages: finalizeMessages,
       schema: finalizeSchema,
     });
-
     const finalizeDuration = Date.now() - finalizeStart;
 
     toolLog.push({
@@ -257,13 +268,13 @@ export async function runAgent(params: AgentParams): Promise<AgentResult> {
       tool: "finalize_proposal",
       args: { round },
       ok: true,
-      result_summary: "Proposal synthesized",
+      result_summary: `Synthesized proposal with ${finalizeResult.object.tasks.length} tasks`,
       result: { task_count: finalizeResult.object.tasks.length },
       duration_ms: finalizeDuration,
       at: new Date().toISOString(),
     });
 
-    // 5. Post-Process & Validate Tasks
+    // 6. Post-Process & Validate Tasks
     const rawOutput: FinalizeOutput = finalizeResult.object;
     const existingTaskIds = params.existingTaskIds || new Set<string>();
 
@@ -377,7 +388,7 @@ export async function runAgent(params: AgentParams): Promise<AgentResult> {
       toolLog,
       messages: finalizeMessages,
       limitsUsed: {
-        modelTurns: modelTurnsUsed + 1,
+        modelTurns: 1,
         toolCalls: toolCallsUsed,
       },
       error: null,

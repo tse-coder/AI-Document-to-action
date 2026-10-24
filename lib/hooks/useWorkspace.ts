@@ -18,7 +18,7 @@ import {
   retryRun,
   submitAnswers,
 } from "@/lib/api-client";
-import { splitParagraphs } from "@/lib/paragraph-utils";
+import { savedTaskToTaskBase, splitParagraphs } from "@/lib/paragraph-utils";
 import type {
   AnswerInput,
   ChecklistDetail,
@@ -28,12 +28,21 @@ import type {
   TaskBase,
   ValidationIssue,
 } from "@/lib/types";
+import type { ChatMessage } from "@/components/chat/ChatMessageItem";
 import { useRunPolling } from "./useRunPolling";
 
 export type WorkspaceBanner = {
   kind: "success" | "error" | "warning";
   message: string;
 } | null;
+
+const INITIAL_CHAT_MESSAGE: ChatMessage = {
+  id: "initial-welcome",
+  sender: "agent",
+  text: "Welcome! Paste an administrative notice or select one from the sidebar. I will analyze requirements, request any needed clarifications, and build a verified checklist.",
+  timestamp: new Date().toISOString(),
+  type: "text",
+};
 
 function friendlyMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError) {
@@ -88,6 +97,11 @@ export function useWorkspace() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [highlightedParas, setHighlightedParas] = useState<string[]>([]);
   const [banner, setBanner] = useState<WorkspaceBanner>(null);
+
+  // Conversational chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    INITIAL_CHAT_MESSAGE,
+  ]);
 
   const documentsRequestRef = useRef(0);
   const selectionRequestRef = useRef(0);
@@ -150,8 +164,34 @@ export function useWorkspace() {
 
       if (documentResult.status === "fulfilled") {
         setActiveDocument(documentResult.value.document);
-        setParagraphs(sortParagraphs(documentResult.value.paragraphs));
+        const sorted = sortParagraphs(documentResult.value.paragraphs);
+        setParagraphs(sorted);
         setDocumentError(null);
+
+        const taskCount =
+          checklistResult.status === "fulfilled"
+            ? checklistResult.value.tasks.length
+            : 0;
+
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: `load-${docId}-${Date.now()}`,
+            sender: "agent",
+            text: `Opened notice "${documentResult.value.document.title}". ${
+              taskCount > 0
+                ? `Loaded ${taskCount} saved checklist task${taskCount === 1 ? "" : "s"}.`
+                : "No saved checklist yet for this notice. You can paste updates or generate a new action plan."
+            }`,
+            timestamp: new Date().toISOString(),
+            type: "notice_submission",
+            metadata: {
+              docTitle: documentResult.value.document.title,
+              paragraphCount: sorted.length,
+              taskCount,
+            },
+          },
+        ]);
       } else {
         setActiveDocument(null);
         setParagraphs([]);
@@ -166,8 +206,12 @@ export function useWorkspace() {
       if (checklistResult.status === "fulfilled") {
         setChecklist(checklistResult.value);
         setChecklistError(null);
+        if (checklistResult.value.tasks) {
+          setEditedTasks(checklistResult.value.tasks.map(savedTaskToTaskBase));
+        }
       } else {
         setChecklist(null);
+        setEditedTasks([]);
         setChecklistError(
           friendlyMessage(
             checklistResult.reason,
@@ -196,6 +240,7 @@ export function useWorkspace() {
     resetDocumentState();
     setDocumentLoading(false);
     setChecklistLoading(false);
+    setChatMessages([INITIAL_CHAT_MESSAGE]);
   }, [resetDocumentState]);
 
   const retryDocuments = useCallback(() => {
@@ -213,6 +258,59 @@ export function useWorkspace() {
     status: run?.status ?? null,
     onUpdate: (updatedRun) => {
       setRun(updatedRun);
+
+      if (
+        updatedRun.status === "needs_clarification" &&
+        updatedRun.questions &&
+        updatedRun.questions.length > 0
+      ) {
+        const questionMsgId = `clarify-${updatedRun.run_id}-${updatedRun.round}`;
+        setChatMessages((prev) => {
+          if (prev.some((m) => m.id === questionMsgId)) return prev;
+          return [
+            ...prev,
+            {
+              id: questionMsgId,
+              sender: "agent",
+              text: "I analyzed the notice and need clarification on the following items before finalizing the checklist:",
+              timestamp: new Date().toISOString(),
+              type: "clarification",
+              questions: updatedRun.questions,
+              toolSummary: updatedRun.tool_log?.map((t) => ({
+                tool: t.tool,
+                summary: t.result_summary || "Completed",
+                ok: t.ok,
+              })),
+            },
+          ];
+        });
+      }
+
+      if (updatedRun.status === "awaiting_approval" && updatedRun.proposal) {
+        const proposalMsgId = `proposal-${updatedRun.run_id}-${updatedRun.proposal.version}`;
+        setChatMessages((prev) => {
+          if (prev.some((m) => m.id === proposalMsgId)) return prev;
+          return [
+            ...prev,
+            {
+              id: proposalMsgId,
+              sender: "agent",
+              text: `Draft checklist ready! Generated ${updatedRun.proposal!.tasks.length} actionable tasks with source paragraph citations. Review and approve the draft in the right column.`,
+              timestamp: new Date().toISOString(),
+              type: "proposal",
+              metadata: {
+                taskCount: updatedRun.proposal!.tasks.length,
+              },
+              toolSummary: updatedRun.tool_log?.map((t) => ({
+                tool: t.tool,
+                summary: t.result_summary || "Completed",
+                ok: t.ok,
+              })),
+            },
+          ];
+        });
+      }
+
       if (updatedRun.proposal?.tasks) {
         setEditedTasks((prev) => {
           if (prev.length === 0) return updatedRun.proposal!.tasks;
@@ -249,6 +347,7 @@ export function useWorkspace() {
       }
     },
     onError: (err) => {
+      const errMsg = err instanceof ApiError ? err.message : "Request timed out";
       setRun((prev) =>
         prev
           ? {
@@ -256,11 +355,21 @@ export function useWorkspace() {
               status: "error",
               error: {
                 code: err instanceof ApiError ? err.code : "MODEL_TIMEOUT",
-                message: err.message,
+                message: errMsg,
               },
             }
           : null
       );
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `poll-err-${Date.now()}`,
+          sender: "agent",
+          text: `Agent encountered an error: ${errMsg}`,
+          timestamp: new Date().toISOString(),
+          type: "error",
+        },
+      ]);
     },
   });
 
@@ -279,6 +388,29 @@ export function useWorkspace() {
       setAnalyzing(true);
       setRun(null);
 
+      const noticeTitle = title.trim() || "Untitled Notice";
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `user-submit-${Date.now()}`,
+          sender: "user",
+          text,
+          timestamp: new Date().toISOString(),
+          type: "notice_submission",
+          metadata: {
+            docTitle: noticeTitle,
+            paragraphCount: immediateParas.length,
+          },
+        },
+        {
+          id: `agent-thinking-${Date.now()}`,
+          sender: "agent",
+          text: `Analyzing "${noticeTitle}" (${immediateParas.length} paragraphs). Extracting actionable tasks, deadlines, and responsibilities...`,
+          timestamp: new Date().toISOString(),
+          type: "text",
+        },
+      ]);
+
       try {
         const result = await createRun({
           text,
@@ -290,10 +422,73 @@ export function useWorkspace() {
         if (result.run.proposal?.tasks) {
           setEditedTasks(result.run.proposal.tasks);
         }
+        if (result.run.doc_id) {
+          setSelectedDocId(result.run.doc_id);
+          void loadSelection(result.run.doc_id, false);
+        }
+
+        if (
+          result.run.status === "needs_clarification" &&
+          result.run.questions?.length
+        ) {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: `clarify-${result.run.run_id}-${result.run.round}`,
+              sender: "agent",
+              text: "I analyzed the notice and need clarification on the following items before finalizing the checklist:",
+              timestamp: new Date().toISOString(),
+              type: "clarification",
+              questions: result.run.questions,
+              toolSummary: result.run.tool_log?.map((t) => ({
+                tool: t.tool,
+                summary: t.result_summary || "Completed",
+                ok: t.ok,
+              })),
+            },
+          ]);
+        } else if (
+          result.run.status === "awaiting_approval" &&
+          result.run.proposal
+        ) {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: `proposal-${result.run.run_id}-${result.run.proposal!.version}`,
+              sender: "agent",
+              text: `Draft checklist ready! Generated ${result.run.proposal!.tasks.length} actionable tasks with source paragraph citations. Review and approve the draft in the right column.`,
+              timestamp: new Date().toISOString(),
+              type: "proposal",
+              metadata: {
+                taskCount: result.run.proposal!.tasks.length,
+              },
+              toolSummary: result.run.tool_log?.map((t) => ({
+                tool: t.tool,
+                summary: t.result_summary || "Completed",
+                ok: t.ok,
+              })),
+            },
+          ]);
+        }
 
         // Refresh sidebar documents list so the new notice appears
         void loadDocuments();
       } catch (err) {
+        const errMsg = friendlyMessage(
+          err,
+          "Analysis failed. Please check your notice and try again."
+        );
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: `err-${Date.now()}`,
+            sender: "agent",
+            text: `Analysis failed: ${errMsg}`,
+            timestamp: new Date().toISOString(),
+            type: "error",
+          },
+        ]);
+
         // Preserve typed text and show error
         setRun({
           run_id: `error-${Date.now()}`,
@@ -317,17 +512,14 @@ export function useWorkspace() {
           },
           error: {
             code: err instanceof ApiError ? err.code : "ANALYSIS_FAILED",
-            message: friendlyMessage(
-              err,
-              "Analysis failed. Please check your notice and try again."
-            ),
+            message: errMsg,
           },
         });
       } finally {
         setAnalyzing(false);
       }
     },
-    [loadDocuments]
+    [loadDocuments, loadSelection]
   );
 
   // Retry failed analysis
@@ -341,6 +533,10 @@ export function useWorkspace() {
         setRun(result.run);
         if (result.run.proposal?.tasks) {
           setEditedTasks(result.run.proposal.tasks);
+        }
+        if (result.run.doc_id) {
+          setSelectedDocId(result.run.doc_id);
+          void loadSelection(result.run.doc_id, false);
         }
       } catch (err) {
         setRun((prev) =>
@@ -364,11 +560,15 @@ export function useWorkspace() {
     } else if (draftText) {
       await startAnalysis({ title: draftTitle, text: draftText });
     }
-  }, [run, draftText, draftTitle, startAnalysis]);
+  }, [run, draftText, draftTitle, startAnalysis, loadSelection]);
 
   const updateTask = useCallback((updated: TaskBase) => {
     setEditedTasks((prev) => {
-      const idx = prev.findIndex((t) => t.client_id === updated.client_id);
+      const idx = prev.findIndex(
+        (t) =>
+          (t.client_id && t.client_id === updated.client_id) ||
+          (t.task_id && t.task_id === updated.task_id)
+      );
       if (idx >= 0) {
         const next = [...prev];
         next[idx] = updated;
@@ -376,6 +576,33 @@ export function useWorkspace() {
       }
       return [...prev, updated];
     });
+  }, []);
+
+  const addTask = useCallback(() => {
+    const newTask: TaskBase = {
+      client_id: `task-custom-${Date.now()}`,
+      action: "create",
+      task_id: null,
+      description: "New action item",
+      source_refs: paragraphs.length > 0 ? [paragraphs[0].paragraph_id] : [],
+      deadline_date: null,
+      deadline_text: null,
+      deadline_source: "user",
+      condition: null,
+      owner: null,
+      owner_source: "none",
+    };
+    setEditedTasks((prev) => [...prev, newTask]);
+  }, [paragraphs]);
+
+  const deleteTask = useCallback((clientIdOrTaskId: string) => {
+    setEditedTasks((prev) =>
+      prev.filter(
+        (t) =>
+          t.client_id !== clientIdOrTaskId &&
+          t.task_id !== clientIdOrTaskId
+      )
+    );
   }, []);
 
   // Submit clarification answers (FE-15)
@@ -391,6 +618,29 @@ export function useWorkspace() {
         if (result.run.proposal?.tasks) {
           setEditedTasks(result.run.proposal.tasks);
         }
+        if (result.run.doc_id) {
+          setSelectedDocId(result.run.doc_id);
+          void loadSelection(result.run.doc_id, false);
+        }
+
+        if (
+          result.run.status === "awaiting_approval" &&
+          result.run.proposal
+        ) {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: `proposal-answered-${Date.now()}`,
+              sender: "agent",
+              text: `Clarifications recorded! Updated draft checklist with ${result.run.proposal!.tasks.length} tasks is ready for your review in the right column.`,
+              timestamp: new Date().toISOString(),
+              type: "proposal",
+              metadata: {
+                taskCount: result.run.proposal!.tasks.length,
+              },
+            },
+          ]);
+        }
       } catch (err) {
         setAnswerError(
           friendlyMessage(
@@ -402,23 +652,70 @@ export function useWorkspace() {
         setSubmittingAnswers(false);
       }
     },
-    [run?.run_id]
+    [run?.run_id, loadSelection]
+  );
+
+  // Single question answer helper for inline chat replies
+  const answerSingleQuestion = useCallback(
+    async (questionId: string, answer: string, notStated: boolean) => {
+      if (!run?.run_id) return;
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `ans-bubble-${questionId}-${Date.now()}`,
+          sender: "user",
+          text: notStated ? "Not stated in notice" : answer,
+          timestamp: new Date().toISOString(),
+          type: "text",
+        },
+      ]);
+      await answerQuestions([
+        {
+          question_id: questionId,
+          answer: notStated ? "" : answer,
+          not_stated: notStated,
+        },
+      ]);
+    },
+    [run?.run_id, answerQuestions]
   );
 
   // Confirm draft checklist and save to database (FE-16)
   const confirmDraft = useCallback(async () => {
-    if (!run?.run_id || run.status !== "awaiting_approval") return;
     setConfirming(true);
     setConfirmError(null);
     setConfirmValidationErrors([]);
     setSaveSuccessMessage(null);
 
-    const tasksToSave =
-      editedTasks.length > 0 ? editedTasks : (run.proposal?.tasks ?? []);
+    const tasksToSave: TaskBase[] =
+      editedTasks.length > 0
+        ? editedTasks
+        : (run?.proposal?.tasks ?? (checklist?.tasks ? checklist.tasks.map(savedTaskToTaskBase) : []));
 
     try {
-      const result = await confirmRun(run.run_id, {
-        proposal_version: run.proposal?.version ?? 1,
+      let targetRunId = run?.run_id;
+      let proposalVersion = run?.proposal?.version ?? 1;
+
+      // If there isn't an active run awaiting approval, but we have a selected notice,
+      // create a run for this document to commit the manual edits.
+      if (!targetRunId || run?.status !== "awaiting_approval") {
+        const activeDocId = selectedDocId || run?.doc_id;
+        if (activeDocId) {
+          const runRes = await createRun({
+            doc_id: activeDocId,
+            request: "Approve and save checklist updates",
+          });
+          targetRunId = runRes.run.run_id;
+          proposalVersion = runRes.run.proposal?.version ?? 1;
+        } else {
+          setConfirmError("No active notice to save checklist for.");
+          setConfirming(false);
+          return;
+        }
+      }
+
+      const result = await confirmRun(targetRunId, {
+        proposal_version: proposalVersion,
         tasks: tasksToSave,
       });
 
@@ -426,6 +723,20 @@ export function useWorkspace() {
       setSaveSuccessMessage(
         `✅ ${count} task${count === 1 ? "" : "s"} saved successfully.`
       );
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `saved-confirm-${Date.now()}`,
+          sender: "agent",
+          text: `Checklist successfully approved and saved! ${count} task${count === 1 ? "" : "s"} are now officially active.`,
+          timestamp: new Date().toISOString(),
+          type: "text",
+          metadata: {
+            taskCount: count,
+          },
+        },
+      ]);
 
       // Transition run status to saved
       setRun((prev) => (prev ? { ...prev, status: "saved" } : null));
@@ -449,7 +760,7 @@ export function useWorkspace() {
       } else if (err instanceof ApiError && err.code === "ALREADY_SAVED") {
         setSaveSuccessMessage("This checklist has already been saved.");
         setRun((prev) => (prev ? { ...prev, status: "saved" } : null));
-        if (run.doc_id) {
+        if (run?.doc_id) {
           setSelectedDocId(run.doc_id);
           void loadSelection(run.doc_id, false);
         }
@@ -461,7 +772,127 @@ export function useWorkspace() {
     } finally {
       setConfirming(false);
     }
-  }, [run, editedTasks, loadDocuments, loadSelection]);
+  }, [run, editedTasks, checklist, selectedDocId, loadDocuments, loadSelection]);
+
+  // Conversational message dispatcher scoped to active notice
+  const sendChatMessage = useCallback(
+    async (text: string, title?: string) => {
+      const activeDocId = selectedDocId || run?.doc_id;
+
+      // Case 1: Active notice selected/open — chat is scoped to this notice and edits its checklist
+      if (activeDocId) {
+        const userMsg: ChatMessage = {
+          id: `user-msg-${Date.now()}`,
+          sender: "user",
+          text,
+          timestamp: new Date().toISOString(),
+          type: "text",
+        };
+        setChatMessages((prev) => [...prev, userMsg]);
+        setAnalyzing(true);
+
+        try {
+          const result = await createRun({
+            doc_id: activeDocId,
+            request: text,
+          });
+
+          setRun(result.run);
+          if (result.run.proposal?.tasks) {
+            setEditedTasks(result.run.proposal.tasks);
+          }
+
+          let replyText = "";
+          if (result.run.proposal?.answers_to_request) {
+            replyText = result.run.proposal.answers_to_request;
+          } else if (result.run.proposal?.summary) {
+            replyText = `I updated the checklist: ${result.run.proposal.summary}. ${result.run.proposal.tasks.length} tasks ready for review.`;
+          } else if (result.run.status === "needs_clarification") {
+            replyText = "I reviewed your question and need clarification before finalizing:";
+          } else if (result.run.status === "awaiting_approval") {
+            replyText = `Checklist updated with ${result.run.proposal?.tasks?.length || 0} tasks. Review them in the right column.`;
+          } else {
+            replyText = "Your request has been processed.";
+          }
+
+          const agentMsg: ChatMessage = {
+            id: `agent-reply-${result.run.run_id}-${Date.now()}`,
+            sender: "agent",
+            text: replyText,
+            timestamp: new Date().toISOString(),
+            type:
+              result.run.status === "needs_clarification"
+                ? "clarification"
+                : result.run.status === "awaiting_approval"
+                ? "proposal"
+                : "text",
+            questions: result.run.questions,
+            metadata: {
+              taskCount: result.run.proposal?.tasks?.length,
+              docTitle: activeDocument?.title,
+            },
+            toolSummary: result.run.tool_log?.map((t) => ({
+              tool: t.tool,
+              summary: t.result_summary || "Completed",
+              ok: t.ok,
+            })),
+          };
+
+          setChatMessages((prev) => [...prev, agentMsg]);
+        } catch (err) {
+          const errMsg = friendlyMessage(
+            err,
+            "Could not process request for this notice. Please try again."
+          );
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: `err-${Date.now()}`,
+              sender: "agent",
+              text: `Request failed: ${errMsg}`,
+              timestamp: new Date().toISOString(),
+              type: "error",
+            },
+          ]);
+        } finally {
+          setAnalyzing(false);
+        }
+        return;
+      }
+
+      // Case 2: No active notice selected, but pasted text is long enough (>= 20 chars)
+      if (text.trim().length >= 20) {
+        await startAnalysis({
+          title:
+            title ||
+            (text.length > 50 ? text.slice(0, 45).trim() + "..." : "Notice"),
+          text,
+        });
+        return;
+      }
+
+      // Case 3: No notice selected and prompt is short (< 20 chars)
+      const userMsg: ChatMessage = {
+        id: `user-msg-${Date.now()}`,
+        sender: "user",
+        text,
+        timestamp: new Date().toISOString(),
+        type: "text",
+      };
+      setChatMessages((prev) => [
+        ...prev,
+        userMsg,
+        {
+          id: `guidance-${Date.now()}`,
+          sender: "agent",
+          text: "Please select an existing notice from the sidebar on the left, or paste an administrative notice into this chat so I can analyze it and generate an action checklist.",
+          timestamp: new Date().toISOString(),
+          type: "text",
+        },
+      ]);
+    },
+    [selectedDocId, run?.doc_id, activeDocument?.title, startAnalysis]
+  );
 
   useEffect(() => {
     void loadDocuments();
@@ -552,6 +983,8 @@ export function useWorkspace() {
     editedTasks,
     setEditedTasks,
     updateTask,
+    addTask,
+    deleteTask,
     answers,
     setAnswers,
     highlightedParas,
@@ -564,5 +997,9 @@ export function useWorkspace() {
     retrySelection,
     startAnalysis,
     retryAnalysis,
+    chatMessages,
+    setChatMessages,
+    sendChatMessage,
+    answerSingleQuestion,
   };
 }

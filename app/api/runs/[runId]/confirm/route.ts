@@ -9,12 +9,6 @@ import { getDocumentWithParagraphs, getRunById, readChecklist, saveChecklist } f
 import { validateProposal } from "../../../../../lib/agent/validator";
 import type { TaskBase, ValidationIssue } from "../../../../../lib/types";
 
-const validDate = (value: string) => {
-  if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false;
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
-};
-
 const taskSchema = z.object({
   client_id: z.string().regex(/^C\d+$/u),
   action: z.enum(["create", "update"]),

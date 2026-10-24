@@ -1,7 +1,26 @@
 // Owner: Member 2 (Frontend Engineer)
 // Client-side paragraph utility for immediate preview upon analysis
 
-import type { Paragraph } from "./types";
+import type { Paragraph, SavedTask, TaskBase } from "./types";
+
+/**
+ * Converts a saved database task into a TaskBase suitable for editing and proposals.
+ */
+export function savedTaskToTaskBase(saved: SavedTask): TaskBase {
+  return {
+    client_id: saved.client_id || saved.task_id,
+    action: saved.action || "update",
+    task_id: saved.task_id,
+    description: saved.description,
+    source_refs: saved.source_refs || [],
+    deadline_date: saved.deadline_date ?? null,
+    deadline_text: saved.deadline_text ?? null,
+    deadline_source: saved.deadline_source || "none",
+    condition: saved.condition ?? null,
+    owner: saved.owner ?? null,
+    owner_source: saved.owner_source || "none",
+  };
+}
 
 /**
  * Splits pasted text on blank lines, trims each piece, drops empty parts,
