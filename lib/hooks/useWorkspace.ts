@@ -1,5 +1,5 @@
 // Owner: Member 2 (Frontend Engineer)
-// Shared page state for the sidebar, document panel and checklist panel (FE-07)
+// Shared page state for the sidebar, document panel and checklist panel (FE-07, FE-10)
 // Source of truth for API shapes: docs/api-spec.md and lib/types.ts
 
 "use client";
@@ -8,10 +8,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   ApiError,
+  createRun,
   getChecklist,
   getDocument,
   getDocuments,
+  retryRun,
 } from "@/lib/api-client";
+import { splitParagraphs } from "@/lib/paragraph-utils";
 import type {
   ChecklistDetail,
   Document,
@@ -19,6 +22,7 @@ import type {
   Run,
   TaskBase,
 } from "@/lib/types";
+import { useRunPolling } from "./useRunPolling";
 
 export type WorkspaceBanner = {
   kind: "success" | "error" | "warning";
@@ -59,8 +63,9 @@ export function useWorkspace() {
   const [checklistLoading, setChecklistLoading] = useState(false);
   const [checklistError, setChecklistError] = useState<string | null>(null);
 
-  // Analysis state (used by the run, editing and approval issues)
+  // Analysis & Run state (FE-08, FE-10)
   const [run, setRun] = useState<Run | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftText, setDraftText] = useState("");
   const [editedTasks, setEditedTasks] = useState<TaskBase[]>([]);
@@ -103,6 +108,7 @@ export function useWorkspace() {
     setAnswers({});
     setHighlightedParas([]);
     setBanner(null);
+    setAnalyzing(false);
   }, []);
 
   const loadSelection = useCallback(
@@ -185,6 +191,134 @@ export function useWorkspace() {
     void loadSelection(selectedDocId, false);
   }, [loadSelection, selectedDocId]);
 
+  // Polling hook for background agent run progress (FE-10)
+  useRunPolling({
+    runId: run?.run_id ?? null,
+    status: run?.status ?? null,
+    onUpdate: (updatedRun) => {
+      setRun(updatedRun);
+      if (updatedRun.proposal?.tasks) {
+        setEditedTasks(updatedRun.proposal.tasks);
+      }
+    },
+    onError: (err) => {
+      setRun((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "error",
+              error: {
+                code: err instanceof ApiError ? err.code : "MODEL_TIMEOUT",
+                message: err.message,
+              },
+            }
+          : null
+      );
+    },
+  });
+
+  // Start analysis flow (FE-10)
+  const startAnalysis = useCallback(
+    async ({ title, text }: { title: string; text: string }) => {
+      setDraftTitle(title);
+      setDraftText(text);
+      setSelectedDocId(null);
+      setActiveDocument(null);
+      setChecklist(null);
+
+      // Immediately display split paragraphs in center panel
+      const immediateParas = splitParagraphs(text, "U");
+      setParagraphs(immediateParas);
+      setAnalyzing(true);
+      setRun(null);
+
+      try {
+        const result = await createRun({
+          text,
+          title: title || undefined,
+          request: "Make a checklist for this notice",
+        });
+
+        setRun(result.run);
+        if (result.run.proposal?.tasks) {
+          setEditedTasks(result.run.proposal.tasks);
+        }
+
+        // Refresh sidebar documents list so the new notice appears
+        void loadDocuments();
+      } catch (err) {
+        // Preserve typed text and show error
+        setRun({
+          run_id: `error-${Date.now()}`,
+          doc_id: "draft",
+          status: "error",
+          request: "Make a checklist for this notice",
+          round: 1,
+          retry_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          questions: [],
+          proposal: null,
+          tool_log: [],
+          limits: {
+            max_model_turns: 4,
+            max_tool_calls: 6,
+            max_clarification_rounds: 2,
+            model_turns_used: 1,
+            tool_calls_used: 0,
+            limit_hit: false,
+          },
+          error: {
+            code: err instanceof ApiError ? err.code : "ANALYSIS_FAILED",
+            message: friendlyMessage(
+              err,
+              "Analysis failed. Please check your notice and try again."
+            ),
+          },
+        });
+      } finally {
+        setAnalyzing(false);
+      }
+    },
+    [loadDocuments]
+  );
+
+  // Retry failed analysis
+  const retryAnalysis = useCallback(async () => {
+    if (!run) return;
+
+    if (run.run_id && !run.run_id.startsWith("error-")) {
+      setAnalyzing(true);
+      try {
+        const result = await retryRun(run.run_id);
+        setRun(result.run);
+        if (result.run.proposal?.tasks) {
+          setEditedTasks(result.run.proposal.tasks);
+        }
+      } catch (err) {
+        setRun((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "error",
+                error: {
+                  code: err instanceof ApiError ? err.code : "RETRY_FAILED",
+                  message: friendlyMessage(
+                    err,
+                    "Retry failed. Please try again."
+                  ),
+                },
+              }
+            : null
+        );
+      } finally {
+        setAnalyzing(false);
+      }
+    } else if (draftText) {
+      await startAnalysis({ title: draftTitle, text: draftText });
+    }
+  }, [run, draftText, draftTitle, startAnalysis]);
+
   useEffect(() => {
     void loadDocuments();
 
@@ -208,6 +342,7 @@ export function useWorkspace() {
     checklistError,
     run,
     setRun,
+    analyzing,
     draftTitle,
     setDraftTitle,
     draftText,
@@ -224,5 +359,7 @@ export function useWorkspace() {
     clearSelection,
     retryDocuments,
     retrySelection,
+    startAnalysis,
+    retryAnalysis,
   };
 }
