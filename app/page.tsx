@@ -39,6 +39,7 @@ export default function Home() {
     checklistLoading,
     checklistError,
     deleteSavedChecklist,
+    deleteSavedNotice,
     run,
     analyzing,
     draftTitle,
@@ -63,12 +64,17 @@ export default function Home() {
     retryAnalysis,
   } = useWorkspace();
 
+  const [confirmDeleteNotice, setConfirmDeleteNotice] = useState(false);
+  const [isDeletingNotice, setIsDeletingNotice] = useState(false);
+
   const handleSelectNotice = (docId: string) => {
+    setConfirmDeleteNotice(false);
     selectDocument(docId);
     setActiveTab("document");
   };
 
   const handleNewNotice = () => {
+    setConfirmDeleteNotice(false);
     clearSelection();
     setActiveTab("document");
   };
@@ -190,6 +196,7 @@ export default function Home() {
             onSelect={handleSelectNotice}
             onRetry={retryDocuments}
             onNewNotice={handleNewNotice}
+            onDeleteNotice={deleteSavedNotice}
           />
         </aside>
 
@@ -211,13 +218,55 @@ export default function Home() {
                     {displayTitle}
                   </h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleNewNotice}
-                  className="self-start px-3 py-1.5 text-xs font-semibold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                >
-                  Paste new notice
-                </button>
+                <div className="flex items-center gap-2 self-start flex-wrap">
+                  {selectedDocId && (
+                    confirmDeleteNotice ? (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={isDeletingNotice}
+                          onClick={async () => {
+                            setIsDeletingNotice(true);
+                            try {
+                              await deleteSavedNotice(selectedDocId);
+                            } finally {
+                              setIsDeletingNotice(false);
+                              setConfirmDeleteNotice(false);
+                            }
+                          }}
+                          className="px-2.5 py-1.5 text-xs font-bold text-white bg-red-600 rounded hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:bg-red-300 transition-colors"
+                        >
+                          {isDeletingNotice ? "Deleting..." : "Confirm Delete"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isDeletingNotice}
+                          onClick={() => setConfirmDeleteNotice(false)}
+                          className="px-2 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-100 focus:outline-none"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteNotice(true)}
+                        className="px-2.5 py-1.5 text-xs font-semibold text-red-700 bg-white border border-red-300 rounded hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 transition-colors"
+                        title="Delete this notice"
+                      >
+                        <span aria-hidden="true" className="mr-1">🗑️</span>
+                        <span>Delete notice</span>
+                      </button>
+                    )
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleNewNotice}
+                    className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  >
+                    Paste new notice
+                  </button>
+                </div>
               </div>
 
               {/* Center Panel Mode Toggle: Notice Paragraphs vs Chat Assistant */}

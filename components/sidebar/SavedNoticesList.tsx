@@ -17,6 +17,7 @@ interface Props {
   onSelect?: (docId: string) => void;
   onRetry?: () => void;
   onNewNotice?: () => void;
+  onDeleteNotice?: (docId: string) => Promise<void> | void;
 }
 
 export default function SavedNoticesList({
@@ -27,12 +28,15 @@ export default function SavedNoticesList({
   onSelect,
   onRetry,
   onNewNotice,
+  onDeleteNotice,
 }: Props) {
   // Internal state when used in standalone mode
   const [internalDocs, setInternalDocs] = useState<Document[]>([]);
   const [internalLoading, setInternalLoading] = useState(false);
   const [internalError, setInternalError] = useState<string | null>(null);
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const isControlled = externalDocs !== undefined;
 
@@ -123,38 +127,98 @@ export default function SavedNoticesList({
       )}
 
       {!isLoading && !errorMsg && docs.length > 0 && (
-        <ul aria-label="Saved notices" className="space-y-1">
+        <ul aria-label="Saved notices" className="space-y-2">
           {docs.map((doc) => {
             const isSelected = selectedId === doc.doc_id;
+            const isConfirmingDelete = confirmDeleteId === doc.doc_id;
 
             return (
               <li key={doc.doc_id}>
-                <button
-                  type="button"
-                  onClick={() => handleSelect(doc.doc_id)}
-                  aria-current={isSelected ? "true" : undefined}
-                  className={`w-full rounded-md border px-3 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+                <div
+                  className={`rounded-md border p-3 transition-colors ${
                     isSelected
                       ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500"
-                      : "border-transparent hover:bg-gray-100"
+                      : "border-gray-200 bg-white hover:bg-gray-50"
                   }`}
                 >
-                  <span
-                    className={`block text-sm leading-snug ${
-                      isSelected
-                        ? "font-semibold text-blue-900"
-                        : "font-medium text-gray-800"
-                    }`}
-                  >
-                    {doc.title}
-                  </span>
-                  <span className="mt-1 block text-xs text-gray-500">
-                    {doc.origin === "demo" ? "Demo" : "Pasted"} ·{" "}
-                    {doc.paragraph_count}{" "}
-                    {doc.paragraph_count === 1 ? "paragraph" : "paragraphs"}
-                  </span>
-                  {isSelected && <span className="sr-only"> (selected)</span>}
-                </button>
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(doc.doc_id)}
+                      aria-current={isSelected ? "true" : undefined}
+                      className="flex-1 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                    >
+                      <span
+                        className={`block text-sm leading-snug ${
+                          isSelected
+                            ? "font-semibold text-blue-900"
+                            : "font-medium text-gray-800"
+                        }`}
+                      >
+                        {doc.title}
+                      </span>
+                      <span className="mt-1 block text-xs text-gray-500">
+                        {doc.origin === "demo" ? "Demo" : "Pasted"} ·{" "}
+                        {doc.paragraph_count}{" "}
+                        {doc.paragraph_count === 1 ? "paragraph" : "paragraphs"}
+                      </span>
+                      {isSelected && <span className="sr-only"> (selected)</span>}
+                    </button>
+                    {onDeleteNotice && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteId(isConfirmingDelete ? null : doc.doc_id);
+                        }}
+                        aria-label={`Delete notice ${doc.title}`}
+                        title="Delete notice"
+                        className="opacity-60 hover:opacity-100 p-1 text-gray-400 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded transition-colors"
+                      >
+                        <span aria-hidden="true" className="text-sm">🗑️</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {isConfirmingDelete && (
+                    <div
+                      className="mt-2.5 pt-2 border-t border-gray-200 flex items-center justify-between gap-1 text-xs"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="text-red-700 font-medium">Delete notice?</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={deletingId === doc.doc_id}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setDeletingId(doc.doc_id);
+                            try {
+                              await onDeleteNotice?.(doc.doc_id);
+                            } finally {
+                              setDeletingId(null);
+                              setConfirmDeleteId(null);
+                            }
+                          }}
+                          className="px-2 py-1 font-bold text-white bg-red-600 hover:bg-red-700 rounded transition-colors disabled:bg-red-300"
+                        >
+                          {deletingId === doc.doc_id ? "Deleting..." : "Delete"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={deletingId === doc.doc_id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteId(null);
+                          }}
+                          className="px-2 py-1 font-medium text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 rounded"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </li>
             );
           })}
@@ -163,3 +227,4 @@ export default function SavedNoticesList({
     </div>
   );
 }
+

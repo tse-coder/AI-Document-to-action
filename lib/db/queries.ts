@@ -581,6 +581,23 @@ export async function deleteChecklist(docId: string): Promise<boolean> {
   });
 }
 
+export async function deleteDocument(docId: string): Promise<boolean> {
+  return sql.begin(async (tx) => {
+    const [doc] = await tx`SELECT id FROM documents WHERE id = ${docId}`;
+    if (!doc) return false;
+    await tx`DELETE FROM task_sources WHERE doc_id = ${docId}`;
+    await tx`DELETE FROM checklist_tasks WHERE doc_id = ${docId}`;
+    await tx`DELETE FROM save_events WHERE doc_id = ${docId}`;
+    await tx`DELETE FROM run_questions WHERE run_id IN (SELECT id FROM runs WHERE doc_id = ${docId})`;
+    await tx`DELETE FROM tool_calls WHERE run_id IN (SELECT id FROM runs WHERE doc_id = ${docId})`;
+    await tx`DELETE FROM runs WHERE doc_id = ${docId}`;
+    await tx`DELETE FROM paragraphs WHERE doc_id = ${docId}`;
+    await tx`DELETE FROM documents WHERE id = ${docId}`;
+    return true;
+  });
+}
+
+
 export interface SaveResult {
   saved_at: string;
   saved: { client_id: string; task_id: string; action: TaskBase["action"] }[];
