@@ -12,6 +12,7 @@ import SavedChecklist from "@/components/checklist/SavedChecklist";
 import DraftChecklist from "@/components/checklist/DraftChecklist";
 import ClarificationForm from "@/components/checklist/ClarificationForm";
 import ApproveButton from "@/components/checklist/ApproveButton";
+import ToolLog from "@/components/checklist/ToolLog";
 import ErrorBanner from "@/components/shared/ErrorBanner";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
@@ -426,15 +427,24 @@ export default function Home() {
                 )}
             </div>
           ) : (
-            <div className="p-4 rounded-md border border-dashed border-gray-300 bg-white text-center">
-              <p className="text-sm text-gray-500">
-                Paste a notice and click{" "}
-                <span className="font-medium text-gray-700">
-                  &quot;Analyze&quot;
-                </span>{" "}
-                to generate a structured checklist.
-              </p>
+            <div className="p-6 rounded-lg border border-dashed border-gray-300 bg-white text-center space-y-3">
+              <div className="w-10 h-10 mx-auto rounded-full bg-blue-50 flex items-center justify-center text-blue-600 text-lg select-none" aria-hidden="true">
+                📋
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-gray-800">
+                  No checklist to show yet
+                </h3>
+                <p className="text-xs text-gray-500 max-w-xs mx-auto leading-relaxed">
+                  Paste a notice and click <span className="font-semibold text-gray-700">&quot;Analyze Notice&quot;</span> in the center panel, or select a saved notice from the sidebar.
+                </p>
+              </div>
             </div>
+          )}
+
+          {/* Collapsible Tool Log for Agent Demo Observability (FE-22) */}
+          {run?.tool_log && run.tool_log.length > 0 && (
+            <ToolLog toolLog={run.tool_log} />
           )}
         </aside>
       </div>
