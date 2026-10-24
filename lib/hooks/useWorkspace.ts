@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ApiError,
@@ -98,10 +98,92 @@ export function useWorkspace() {
   const [highlightedParas, setHighlightedParas] = useState<string[]>([]);
   const [banner, setBanner] = useState<WorkspaceBanner>(null);
 
-  // Conversational chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    INITIAL_CHAT_MESSAGE,
-  ]);
+  // Document-scoped conversational chat state
+  const [chatHistories, setChatHistories] = useState<Record<string, ChatMessage[]>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("doc2action_chat_histories_v3");
+        if (stored) return JSON.parse(stored);
+      } catch {
+        // ignore
+      }
+    }
+    return {};
+  });
+
+  const activeDocKey = selectedDocId || "new";
+
+  const chatMessages = useMemo(() => {
+    if (chatHistories[activeDocKey] && chatHistories[activeDocKey].length > 0) {
+      return chatHistories[activeDocKey];
+    }
+    if (activeDocKey === "new") {
+      return [INITIAL_CHAT_MESSAGE];
+    }
+    return [
+      {
+        id: `initial-${activeDocKey}`,
+        sender: "agent" as const,
+        text: "Opened notice. Review the checklist draft on the right, ask questions, or request edits.",
+        timestamp: new Date().toISOString(),
+        type: "text" as const,
+      },
+    ];
+  }, [chatHistories, activeDocKey]);
+
+  const appendChatMessage = useCallback(
+    (
+      messageOrUpdater:
+        | ChatMessage
+        | ChatMessage[]
+        | ((prev: ChatMessage[]) => ChatMessage[]),
+      targetKey?: string
+    ) => {
+      setChatHistories((prev) => {
+        const key = targetKey || selectedDocId || "new";
+        const current =
+          prev[key] && prev[key].length > 0
+            ? prev[key]
+            : key === "new"
+            ? [INITIAL_CHAT_MESSAGE]
+            : [
+                {
+                  id: `initial-${key}`,
+                  sender: "agent" as const,
+                  text: "Opened notice. Review the checklist draft on the right, ask questions, or request edits.",
+                  timestamp: new Date().toISOString(),
+                  type: "text" as const,
+                },
+              ];
+        const next =
+          typeof messageOrUpdater === "function"
+            ? messageOrUpdater(current)
+            : Array.isArray(messageOrUpdater)
+            ? messageOrUpdater
+            : [...current, messageOrUpdater];
+        const updated = { ...prev, [key]: next };
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(
+              "doc2action_chat_histories_v3",
+              JSON.stringify(updated)
+            );
+          } catch {
+            // ignore
+          }
+        }
+        return updated;
+      });
+    },
+    [selectedDocId]
+  );
+
+  const setChatMessages = useCallback(
+    (action: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+      appendChatMessage(action);
+    },
+    [appendChatMessage]
+  );
 
   const documentsRequestRef = useRef(0);
   const selectionRequestRef = useRef(0);
@@ -173,15 +255,15 @@ export function useWorkspace() {
             ? checklistResult.value.tasks.length
             : 0;
 
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `load-${docId}-${Date.now()}`,
+        setChatHistories((all) => {
+          if (all[docId] && all[docId].length > 0) return all;
+          const initialDocMsg: ChatMessage = {
+            id: `load-${docId}`,
             sender: "agent",
             text: `Opened notice "${documentResult.value.document.title}". ${
               taskCount > 0
                 ? `Loaded ${taskCount} saved checklist task${taskCount === 1 ? "" : "s"}.`
-                : "No saved checklist yet for this notice. You can paste updates or generate a new action plan."
+                : "No saved checklist yet for this notice. You can ask me to generate action items."
             }`,
             timestamp: new Date().toISOString(),
             type: "notice_submission",
@@ -190,8 +272,20 @@ export function useWorkspace() {
               paragraphCount: sorted.length,
               taskCount,
             },
-          },
-        ]);
+          };
+          const next = { ...all, [docId]: [initialDocMsg] };
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(
+                "doc2action_chat_histories_v3",
+                JSON.stringify(next)
+              );
+            } catch {
+              // ignore
+            }
+          }
+          return next;
+        });
       } else {
         setActiveDocument(null);
         setParagraphs([]);
@@ -241,7 +335,7 @@ export function useWorkspace() {
     setDocumentLoading(false);
     setChecklistLoading(false);
     setChatMessages([INITIAL_CHAT_MESSAGE]);
-  }, [resetDocumentState]);
+  }, [resetDocumentState, setChatMessages]);
 
   const retryDocuments = useCallback(() => {
     void loadDocuments();
@@ -423,52 +517,66 @@ export function useWorkspace() {
           setEditedTasks(result.run.proposal.tasks);
         }
         if (result.run.doc_id) {
-          setSelectedDocId(result.run.doc_id);
-          void loadSelection(result.run.doc_id, false);
-        }
+          const newDocId = result.run.doc_id;
+          setSelectedDocId(newDocId);
 
-        if (
-          result.run.status === "needs_clarification" &&
-          result.run.questions?.length
-        ) {
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: `clarify-${result.run.run_id}-${result.run.round}`,
-              sender: "agent",
-              text: "I analyzed the notice and need clarification on the following items before finalizing the checklist:",
-              timestamp: new Date().toISOString(),
-              type: "clarification",
-              questions: result.run.questions,
-              toolSummary: result.run.tool_log?.map((t) => ({
-                tool: t.tool,
-                summary: t.result_summary || "Completed",
-                ok: t.ok,
-              })),
-            },
-          ]);
-        } else if (
-          result.run.status === "awaiting_approval" &&
-          result.run.proposal
-        ) {
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: `proposal-${result.run.run_id}-${result.run.proposal!.version}`,
-              sender: "agent",
-              text: `Draft checklist ready! Generated ${result.run.proposal!.tasks.length} actionable tasks with source paragraph citations. Review and approve the draft in the right column.`,
-              timestamp: new Date().toISOString(),
-              type: "proposal",
-              metadata: {
-                taskCount: result.run.proposal!.tasks.length,
-              },
-              toolSummary: result.run.tool_log?.map((t) => ({
-                tool: t.tool,
-                summary: t.result_summary || "Completed",
-                ok: t.ok,
-              })),
-            },
-          ]);
+          setChatHistories((all) => {
+            const currentThread = all["new"] || [];
+            const agentReply: ChatMessage =
+              result.run.status === "needs_clarification" &&
+              result.run.questions?.length
+                ? {
+                    id: `clarify-${result.run.run_id}-${result.run.round}`,
+                    sender: "agent",
+                    text: "I analyzed the notice and generated an initial task draft on the right. However, there are missing details that need your input:",
+                    timestamp: new Date().toISOString(),
+                    type: "clarification",
+                    questions: result.run.questions,
+                    toolSummary: result.run.tool_log?.map((t) => ({
+                      tool: t.tool,
+                      summary: t.result_summary || "Completed",
+                      ok: t.ok,
+                    })),
+                  }
+                : {
+                    id: `proposal-${result.run.run_id}-${
+                      result.run.proposal?.version || 1
+                    }`,
+                    sender: "agent",
+                    text: `Draft checklist ready! Generated ${
+                      result.run.proposal?.tasks.length || 0
+                    } actionable tasks with source paragraph citations. Review and approve the draft in the right column.`,
+                    timestamp: new Date().toISOString(),
+                    type: "proposal",
+                    metadata: {
+                      taskCount: result.run.proposal?.tasks.length,
+                    },
+                    toolSummary: result.run.tool_log?.map((t) => ({
+                      tool: t.tool,
+                      summary: t.result_summary || "Completed",
+                      ok: t.ok,
+                    })),
+                  };
+
+            const next = {
+              ...all,
+              [newDocId]: [...currentThread, agentReply],
+              new: [INITIAL_CHAT_MESSAGE],
+            };
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem(
+                  "doc2action_chat_histories_v3",
+                  JSON.stringify(next)
+                );
+              } catch {
+                // ignore
+              }
+            }
+            return next;
+          });
+
+          void loadSelection(newDocId, false);
         }
 
         // Refresh sidebar documents list so the new notice appears
@@ -519,7 +627,7 @@ export function useWorkspace() {
         setAnalyzing(false);
       }
     },
-    [loadDocuments, loadSelection]
+    [loadDocuments, loadSelection, setChatMessages]
   );
 
   // Retry failed analysis
@@ -624,6 +732,21 @@ export function useWorkspace() {
         }
 
         if (
+          result.run.status === "needs_clarification" &&
+          result.run.questions?.length
+        ) {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: `clarify-round-${result.run.round}-${Date.now()}`,
+              sender: "agent",
+              text: "Recorded. There is one more detail to clarify before finalizing the checklist:",
+              timestamp: new Date().toISOString(),
+              type: "clarification",
+              questions: result.run.questions,
+            },
+          ]);
+        } else if (
           result.run.status === "awaiting_approval" &&
           result.run.proposal
         ) {
@@ -652,7 +775,7 @@ export function useWorkspace() {
         setSubmittingAnswers(false);
       }
     },
-    [run?.run_id, loadSelection]
+    [run?.run_id, loadSelection, setChatMessages]
   );
 
   // Single question answer helper for inline chat replies
@@ -677,7 +800,7 @@ export function useWorkspace() {
         },
       ]);
     },
-    [run?.run_id, answerQuestions]
+    [run?.run_id, answerQuestions, setChatMessages]
   );
 
   // Confirm draft checklist and save to database (FE-16)
@@ -772,7 +895,15 @@ export function useWorkspace() {
     } finally {
       setConfirming(false);
     }
-  }, [run, editedTasks, checklist, selectedDocId, loadDocuments, loadSelection]);
+  }, [
+    run,
+    editedTasks,
+    checklist,
+    selectedDocId,
+    loadDocuments,
+    loadSelection,
+    setChatMessages,
+  ]);
 
   // Conversational message dispatcher scoped to active notice
   const sendChatMessage = useCallback(
@@ -891,7 +1022,13 @@ export function useWorkspace() {
         },
       ]);
     },
-    [selectedDocId, run?.doc_id, activeDocument?.title, startAnalysis]
+    [
+      selectedDocId,
+      run?.doc_id,
+      activeDocument?.title,
+      startAnalysis,
+      setChatMessages,
+    ]
   );
 
   useEffect(() => {

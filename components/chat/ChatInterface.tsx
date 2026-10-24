@@ -1,5 +1,5 @@
 // Owner: Member 2 (Frontend Engineer)
-// Main Chat Interface — Conversational Document-to-Action Agent workspace
+// Main Chat Interface — Clean, sharp, distraction-free conversational workspace
 
 "use client";
 
@@ -23,6 +23,28 @@ interface ChatInterfaceProps {
   submittingAnswer?: boolean;
 }
 
+const SAMPLE_NOTICE_N1 = `The Registrar's Office will renew student ID cards for the 2026/27 academic year.
+
+Each student must submit two documents: a completed renewal form and one recent passport photo.
+
+Both documents must be submitted to Room 12 of the Registrar's Office by 15 November 2026.
+
+Final-year students are exempt from the passport photo requirement and submit only the form.
+
+The renewal form must be signed by the department head before submission.`;
+
+const SAMPLE_NOTICE_N2 = `The Engineering Lab lends equipment to registered students for coursework projects.
+
+A student who wants to borrow equipment must present a valid student ID card and a signed borrowing form.
+
+Equipment must be returned within 7 days of the borrowing date.
+
+Students who return equipment late must pay a late fee of 20 birr per day.
+
+Postgraduate students may borrow equipment for up to 14 days instead of 7 days.
+
+Damaged equipment must be reported to the lab technician on the day of return.`;
+
 export default function ChatInterface({
   messages,
   onSendMessage,
@@ -38,7 +60,7 @@ export default function ChatInterface({
 }: ChatInterfaceProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom whenever new messages arrive
+  // Auto-scroll to bottom on message change or loading state
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -47,7 +69,7 @@ export default function ChatInterface({
 
   return (
     <div className="flex flex-col h-full bg-white overflow-hidden">
-      {/* Top Sticky Document Inspector */}
+      {/* Top Document Drawer */}
       <DocumentDrawer
         title={documentTitle}
         docId={selectedDocId}
@@ -57,49 +79,74 @@ export default function ChatInterface({
         onNewNotice={onNewNotice}
       />
 
-      {/* Message Feed Stream */}
+      {/* Message Feed */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-2 scroll-smooth"
+        className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-3.5 scroll-smooth"
       >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4 max-w-md mx-auto">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 shadow-sm">
-              <svg className="w-6 h-6 fill-current" viewBox="0 0 20 20">
-                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700">
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
               </svg>
             </div>
-            <div className="space-y-1.5">
-              <h3 className="text-base font-bold text-gray-900">
-                AI Document to Action Agent
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Turn notices into actionable checklists
               </h3>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Paste an administrative notice or announcement below. The agent will parse requirements, ask clarifications, and create a verified checklist with paragraph citations.
+              <p className="text-xs text-slate-500 leading-relaxed max-w-xs">
+                Paste an administrative directive or policy notice below. The agent extracts tasks, owners, and deadlines with paragraph citations.
               </p>
             </div>
 
-            <div className="w-full pt-2 grid grid-cols-1 gap-2 text-left">
+            <div className="w-full pt-1 grid grid-cols-1 gap-2 text-left">
               <button
                 type="button"
                 onClick={() =>
-                  onSendMessage(
-                    "The Registrar's Office will renew student ID cards for the 2026/27 academic year.\n\nEach student must submit two documents: a completed renewal form and one recent passport photo.\n\nBoth documents must be submitted to Room 12 of the Registrar's Office by 15 November 2026.\n\nFinal-year students are exempt from the passport photo requirement and submit only the form.\n\nThe renewal form must be signed by the department head before submission.",
-                    "Student ID Card Renewal Notice"
-                  )
+                  onSendMessage(SAMPLE_NOTICE_N1, "Student ID Card Renewal Notice")
                 }
-                className="p-3 text-xs bg-gray-50 hover:bg-indigo-50/60 border border-gray-200 hover:border-indigo-200 rounded-xl transition-all flex items-start gap-2.5 group"
+                className="p-3 text-xs bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg transition-colors flex items-center justify-between group"
               >
-                <span className="text-indigo-600 font-bold group-hover:scale-105 transition-transform">
-                  📄
-                </span>
-                <div>
-                  <span className="font-semibold text-gray-800 block">
-                    Try Demo Notice N1
+                <div className="text-left">
+                  <span className="font-semibold text-slate-800 block">
+                    Student ID Renewal Notice (Demo N1)
                   </span>
-                  <span className="text-gray-500 text-[11px]">
-                    Student ID Renewal with deadline and exempt condition
+                  <span className="text-slate-500 text-[11px]">
+                    Deadlines, photo requirement &amp; final-year student exemption
                   </span>
                 </div>
+                <span className="text-slate-400 group-hover:text-slate-700 text-sm">→</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  onSendMessage(SAMPLE_NOTICE_N2, "Lab Equipment Borrowing Procedure")
+                }
+                className="p-3 text-xs bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg transition-colors flex items-center justify-between group"
+              >
+                <div className="text-left">
+                  <span className="font-semibold text-slate-800 block">
+                    Lab Equipment Borrowing Procedure (Demo N2)
+                  </span>
+                  <span className="text-slate-500 text-[11px]">
+                    Tests interactive clarification for unstated owner/deadline
+                  </span>
+                </div>
+                <span className="text-slate-400 group-hover:text-slate-700 text-sm">→</span>
               </button>
             </div>
           </div>
@@ -110,6 +157,7 @@ export default function ChatInterface({
               message={msg}
               onAnswerQuestion={onAnswerQuestion}
               isSubmittingAnswer={submittingAnswer}
+              onCitationClick={onParagraphClick}
               onViewDocument={
                 paragraphs.length > 0 ? () => {} : undefined
               }
@@ -117,63 +165,28 @@ export default function ChatInterface({
           ))
         )}
 
-        {/* Live Run Process Indicator */}
+        {/* Quiet, Minimalist Processing State */}
         {loading && (
-          <div className="my-4 p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 shadow-sm space-y-3 max-w-lg">
-            <div className="flex items-center justify-between pb-2 border-b border-indigo-100">
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 animate-spin text-indigo-600 flex-shrink-0" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                  />
-                </svg>
-                <span className="text-xs font-bold text-indigo-950 uppercase tracking-wider">
-                  Agent Run In Progress
-                </span>
-              </div>
-              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-white text-indigo-700 border border-indigo-200">
-                Live Trace
-              </span>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center gap-2 text-emerald-800">
-                <svg className="w-3.5 h-3.5 fill-current text-emerald-600 flex-shrink-0" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">1. Document paragraphs indexed and cited</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-indigo-900 font-semibold animate-pulse">
-                <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping flex-shrink-0" />
-                <span>2. Searching document requirements &amp; cross-referencing checklist</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-gray-500">
-                <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
-                <span>3. Formulating actionable tasks with Gemini AI</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-gray-400">
-                <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
-                <span>4. Citation verification &amp; approval gate</span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-indigo-700/80 pt-1 border-t border-indigo-100/80 leading-relaxed">
-              Extracting deadlines, determining ownership, checking exemptions, and linking each requirement to source paragraphs...
-            </p>
+          <div className="my-3 p-3.5 rounded-lg bg-slate-50 border border-slate-200/90 text-xs text-slate-700 flex items-center gap-2.5 max-w-sm">
+            <svg className="w-4 h-4 animate-spin text-slate-600 flex-shrink-0" viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="3"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8H4z"
+              />
+            </svg>
+            <span className="font-medium text-slate-700">
+              Analyzing notice and updating checklist...
+            </span>
           </div>
         )}
       </div>
@@ -183,6 +196,7 @@ export default function ChatInterface({
         onSendMessage={onSendMessage}
         loading={loading}
         disabled={submittingAnswer}
+        selectedDocId={selectedDocId}
       />
     </div>
   );
