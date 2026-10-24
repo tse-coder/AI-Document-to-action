@@ -9,6 +9,7 @@ import SavedNoticesList from "@/components/sidebar/SavedNoticesList";
 import TextInput from "@/components/document/TextInput";
 import ParagraphViewer from "@/components/document/ParagraphViewer";
 import SavedChecklist from "@/components/checklist/SavedChecklist";
+import DraftChecklist from "@/components/checklist/DraftChecklist";
 import ErrorBanner from "@/components/shared/ErrorBanner";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
@@ -35,6 +36,8 @@ export default function Home() {
     analyzing,
     draftTitle,
     draftText,
+    editedTasks,
+    updateTask,
     highlightedParas,
     setHighlightedParas,
     selectDocument,
@@ -290,6 +293,19 @@ export default function Home() {
                 The agent identified {run.questions.length} question(s) regarding missing details.
               </p>
             </div>
+          ) : run?.status === "awaiting_approval" && run.proposal ? (
+            <DraftChecklist
+              proposal={run.proposal}
+              tasks={editedTasks.length > 0 ? editedTasks : run.proposal.tasks}
+              onTaskChange={updateTask}
+              onSourceRefClick={(refs) => {
+                setHighlightedParas(refs);
+                if (typeof window !== "undefined" && window.innerWidth < 768) {
+                  setActiveTab("document");
+                }
+              }}
+              highlightedRefs={highlightedParas}
+            />
           ) : run?.status === "awaiting_approval" ? (
             <div className="space-y-3 p-3 bg-indigo-50 border border-indigo-200 rounded-md">
               <div className="flex items-center gap-2">
@@ -299,7 +315,7 @@ export default function Home() {
                 </h3>
               </div>
               <p className="text-xs text-indigo-800 leading-relaxed">
-                {run.proposal?.summary || "Review the generated draft tasks below."}
+                Review the generated draft tasks below.
               </p>
             </div>
           ) : selectedDocId ? (

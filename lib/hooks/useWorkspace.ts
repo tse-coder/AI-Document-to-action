@@ -198,7 +198,38 @@ export function useWorkspace() {
     onUpdate: (updatedRun) => {
       setRun(updatedRun);
       if (updatedRun.proposal?.tasks) {
-        setEditedTasks(updatedRun.proposal.tasks);
+        setEditedTasks((prev) => {
+          if (prev.length === 0) return updatedRun.proposal!.tasks;
+          return updatedRun.proposal!.tasks.map((newT) => {
+            const existing = prev.find((e) => e.client_id === newT.client_id);
+            if (!existing) return newT;
+            // Preserves user edits across proposal updates (FE-12)
+            return {
+              ...newT,
+              description: existing.description || newT.description,
+              owner:
+                existing.owner_source === "user"
+                  ? existing.owner
+                  : newT.owner,
+              owner_source:
+                existing.owner_source === "user"
+                  ? "user"
+                  : newT.owner_source,
+              deadline_date:
+                existing.deadline_source === "user"
+                  ? existing.deadline_date
+                  : newT.deadline_date,
+              deadline_source:
+                existing.deadline_source === "user"
+                  ? "user"
+                  : newT.deadline_source,
+              deadline_text:
+                existing.deadline_source === "user"
+                  ? null
+                  : newT.deadline_text,
+            };
+          });
+        });
       }
     },
     onError: (err) => {
@@ -319,6 +350,18 @@ export function useWorkspace() {
     }
   }, [run, draftText, draftTitle, startAnalysis]);
 
+  const updateTask = useCallback((updated: TaskBase) => {
+    setEditedTasks((prev) => {
+      const idx = prev.findIndex((t) => t.client_id === updated.client_id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = updated;
+        return next;
+      }
+      return [...prev, updated];
+    });
+  }, []);
+
   useEffect(() => {
     void loadDocuments();
 
@@ -349,6 +392,7 @@ export function useWorkspace() {
     setDraftText,
     editedTasks,
     setEditedTasks,
+    updateTask,
     answers,
     setAnswers,
     highlightedParas,

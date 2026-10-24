@@ -29,9 +29,12 @@ export default function ParagraphViewer({
   useEffect(() => {
     if (activeHighlights.length > 0 && typeof window !== "undefined") {
       const firstId = activeHighlights[0];
+      const normalized = firstId.replace(/^[A-Za-z0-9]+-/, "");
       const target =
         containerRef.current?.querySelector(`[data-para-id="${firstId}"]`) ||
-        document.getElementById(firstId);
+        document.getElementById(firstId) ||
+        containerRef.current?.querySelector(`[data-para-id$="-${normalized}"]`) ||
+        containerRef.current?.querySelector(`[data-para-id="${normalized}"]`);
 
       if (target) {
         target.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -47,7 +50,12 @@ export default function ParagraphViewer({
       aria-label="Document paragraphs"
     >
       {paragraphs.map((p) => {
-        const isHighlighted = activeHighlights.includes(p.paragraph_id);
+        const isHighlighted = activeHighlights.some((ref) => {
+          if (ref === p.paragraph_id) return true;
+          const refNorm = ref.replace(/^[A-Za-z0-9]+-/, "");
+          const pNorm = p.paragraph_id.replace(/^[A-Za-z0-9]+-/, "");
+          return refNorm === pNorm;
+        });
 
         return (
           <div
