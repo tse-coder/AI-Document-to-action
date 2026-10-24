@@ -17,50 +17,56 @@ export default function FinalCtaSection() {
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Left Column: Heading, Subtitle, Buttons */}
             <div className="lg:col-span-8 space-y-5">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
-                Turn Notices into Actionable Checklists Today
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight text-balance">
+                Turn Dense Notices into Actionable Checklists Today
               </h2>
-              <p className="text-sm sm:text-base text-blue-100 max-w-xl leading-relaxed">
-                Paste an administrative directive, let AI extract requirements and cite paragraphs, and approve your verified checklist in seconds.
+              <p className="text-base sm:text-lg text-blue-100 max-w-xl leading-relaxed text-pretty font-normal">
+                Upload or paste any administrative directive, extract verified requirements with exact paragraph citations, and approve your auditable checklist in seconds.
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              <div className="flex flex-wrap items-center gap-3.5 pt-2">
                 <Link
                   href="/app"
-                  className="px-6 py-3 bg-white text-[#1765F5] hover:bg-blue-50 font-semibold text-xs sm:text-sm rounded-lg shadow-md transition-all inline-flex items-center gap-1.5"
+                  className="px-6 py-3.5 bg-white text-[#1765F5] hover:bg-blue-50 font-semibold text-sm rounded-xl shadow-md transition-all inline-flex items-center gap-2 group"
                 >
                   <span>Start New Analysis</span>
-                  <span>→</span>
+                  <span className="text-base transition-transform group-hover:translate-x-0.5">→</span>
                 </Link>
 
                 <Link
                   href="/app?doc=N1"
-                  className="px-6 py-3 bg-transparent hover:bg-white/10 text-white font-semibold text-xs sm:text-sm rounded-lg border border-white/60 transition-colors inline-flex items-center"
+                  className="px-6 py-3.5 bg-white/10 hover:bg-white/15 text-white font-medium text-sm rounded-xl border border-white/30 backdrop-blur-sm transition-colors inline-flex items-center"
                 >
                   Explore Sample Notice
                 </Link>
               </div>
             </div>
 
-            {/* Right Column: 3 Checkmarks */}
-            <div className="lg:col-span-4 space-y-3 lg:border-l lg:border-white/20 lg:pl-8">
-              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-white font-medium">
+            {/* Right Column: 4 Key Value Checkmarks */}
+            <div className="lg:col-span-4 space-y-3.5 lg:border-l lg:border-white/20 lg:pl-8">
+              <div className="flex items-center gap-2.5 text-xs sm:text-[13px] text-white font-medium">
                 <span className="w-4 h-4 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px] font-bold">
                   ✓
                 </span>
-                <span>Zero setup required</span>
+                <span>Zero setup or configuration required</span>
               </div>
-              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-white font-medium">
+              <div className="flex items-center gap-2.5 text-xs sm:text-[13px] text-white font-medium">
                 <span className="w-4 h-4 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px] font-bold">
                   ✓
                 </span>
-                <span>Deterministic paragraph indexing</span>
+                <span>Deterministic paragraph indexing (P1, P2…)</span>
               </div>
-              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-white font-medium">
+              <div className="flex items-center gap-2.5 text-xs sm:text-[13px] text-white font-medium">
                 <span className="w-4 h-4 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px] font-bold">
                   ✓
                 </span>
-                <span>Full source citation</span>
+                <span>Guaranteed paragraph source citations</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs sm:text-[13px] text-white font-medium">
+                <span className="w-4 h-4 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px] font-bold">
+                  ✓
+                </span>
+                <span>Mandatory human sign-off before save</span>
               </div>
             </div>
           </div>

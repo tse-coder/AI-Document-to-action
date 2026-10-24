@@ -31,7 +31,7 @@ export default function Navbar() {
                 <line x1="9" y1="17" x2="13" y2="17" />
               </svg>
             </div>
-            <span className="font-bold text-lg sm:text-xl tracking-tight text-[#10264A]">
+            <span className="font-bold text-[19px] tracking-tight text-[#10264A]">
               Doc2Action
             </span>
           </Link>
@@ -39,36 +39,42 @@ export default function Navbar() {
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-7">
             <Link
-              href="/#features"
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              href="/#overview"
+              className="text-[13px] font-medium text-slate-600 hover:text-slate-950 transition-colors"
             >
-              Product
+              Overview
             </Link>
             <Link
               href="/#how-it-works"
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              className="text-[13px] font-medium text-slate-600 hover:text-slate-950 transition-colors"
             >
               How It Works
             </Link>
             <Link
               href="/#features"
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              className="text-[13px] font-medium text-slate-600 hover:text-slate-950 transition-colors"
             >
-              Features
+              Core Features
+            </Link>
+            <Link
+              href="/#traceability"
+              className="text-[13px] font-medium text-slate-600 hover:text-slate-950 transition-colors"
+            >
+              Traceability
             </Link>
             <Link
               href="/team"
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              className="text-[13px] font-medium text-slate-600 hover:text-slate-950 transition-colors"
             >
               Team
             </Link>
           </nav>
 
           {/* Right Actions */}
-          <div className="hidden sm:flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-3">
             <Link
               href="/saved-notices"
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-3 py-1.5 transition-colors"
+              className="text-[13px] font-medium text-slate-600 hover:text-slate-950 px-3 py-1.5 transition-colors"
             >
               Saved Notices
             </Link>
@@ -80,7 +86,7 @@ export default function Navbar() {
             </Link>
             <Link
               href="/app"
-              className="inline-flex items-center justify-center text-xs font-semibold text-white bg-[#1765F5] hover:bg-blue-600 active:bg-blue-700 px-4 py-2 rounded-lg shadow-sm shadow-blue-600/20 transition-all hover:shadow-md hover:shadow-blue-600/25"
+              className="inline-flex items-center justify-center text-[13px] font-semibold text-white bg-[#1765F5] hover:bg-blue-600 active:bg-blue-700 px-4 py-2 rounded-lg shadow-xs shadow-blue-600/20 transition-all hover:shadow-sm"
             >
               Start New Analysis
             </Link>
@@ -92,7 +98,7 @@ export default function Navbar() {
               href="/app"
               className="text-xs font-semibold text-white bg-[#1765F5] px-3 py-1.5 rounded-lg"
             >
-              Start New Analysis
+              Start Analysis
             </Link>
             <button
               type="button"
@@ -136,39 +142,46 @@ export default function Navbar() {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-2 shadow-lg">
+        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-1 shadow-lg">
           <Link
-            href="/#features"
+            href="/#overview"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
+            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
           >
-            Product
+            Overview
           </Link>
           <Link
             href="/#how-it-works"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
+            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
           >
             How It Works
           </Link>
           <Link
             href="/#features"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
+            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
           >
-            Features
+            Core Features
+          </Link>
+          <Link
+            href="/#traceability"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
+          >
+            Traceability
           </Link>
           <Link
             href="/team"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
+            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
           >
             Team
           </Link>
           <Link
             href="/saved-notices"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
+            className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
           >
             Saved Notices
           </Link>
@@ -183,7 +196,7 @@ export default function Navbar() {
             <Link
               href="/app"
               onClick={() => setMobileMenuOpen(false)}
-              className="text-center py-2.5 text-sm font-semibold text-white bg-[#1765F5] hover:bg-blue-600 rounded-md shadow-sm"
+              className="text-center py-2.5 text-sm font-semibold text-white bg-[#1765F5] hover:bg-blue-600 rounded-lg shadow-xs"
             >
               Start New Analysis
             </Link>
