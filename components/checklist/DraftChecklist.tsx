@@ -5,11 +5,12 @@
 "use client";
 
 import { useState } from "react";
-import type { Proposal, TaskBase } from "@/lib/types";
+import type { Proposal, TaskBase, ValidationIssue } from "@/lib/types";
 
 interface Props {
   proposal: Proposal;
   tasks?: TaskBase[];
+  serverErrors?: ValidationIssue[];
   onTaskChange?: (updatedTask: TaskBase) => void;
   onTaskEdit?: (clientId: string, field: keyof TaskBase, value: unknown) => void;
   onSourceRefClick?: (refs: string[]) => void;
@@ -20,6 +21,7 @@ interface Props {
 export default function DraftChecklist({
   proposal,
   tasks: controlledTasks,
+  serverErrors = [],
   onTaskChange,
   onTaskEdit,
   onSourceRefClick,
@@ -183,6 +185,10 @@ export default function DraftChecklist({
                   (issue) => issue.task_client_id === task.client_id
                 ) ?? [];
 
+              const taskServerErrors = serverErrors.filter(
+                (issue) => issue.task_client_id === task.client_id
+              );
+
               return (
                 <tr key={task.client_id} className="align-top hover:bg-gray-50/50">
                   {/* Action / ID */}
@@ -262,6 +268,21 @@ export default function DraftChecklist({
                         </span>
                       ))}
                     </div>
+
+                    {/* Inline Server Validation Errors (FE-16) */}
+                    {taskServerErrors.length > 0 && (
+                      <div className="space-y-1 pt-1">
+                        {taskServerErrors.map((err, idx) => (
+                          <div
+                            key={`srv-${idx}`}
+                            className="p-1.5 bg-red-50 border border-red-200 rounded text-[11px] text-red-700 flex items-start gap-1 font-medium"
+                          >
+                            <span aria-hidden="true">🚫</span>
+                            <span>{err.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </td>
 
                   {/* Owner */}
@@ -357,6 +378,10 @@ export default function DraftChecklist({
             proposal.validation?.issues?.filter(
               (issue) => issue.task_client_id === task.client_id
             ) ?? [];
+
+          const taskServerErrors = serverErrors.filter(
+            (issue) => issue.task_client_id === task.client_id
+          );
 
           return (
             <div
@@ -519,6 +544,21 @@ export default function DraftChecklist({
                   </span>
                 ))}
               </div>
+
+              {/* Inline Server Validation Errors (FE-16) */}
+              {taskServerErrors.length > 0 && (
+                <div className="space-y-1 pt-1">
+                  {taskServerErrors.map((err, idx) => (
+                    <div
+                      key={`m-srv-${idx}`}
+                      className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700 flex items-start gap-1.5 font-medium"
+                    >
+                      <span aria-hidden="true">🚫</span>
+                      <span>{err.message}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
