@@ -105,11 +105,20 @@ export default function SavedNoticesList({
       )}
 
       {!isLoading && !errorMsg && docs.length === 0 && (
-        <div className="p-4 rounded-md border border-dashed border-gray-300 bg-white">
+        <div className="p-4 rounded-md border border-dashed border-gray-300 bg-white text-center space-y-2">
           <p className="text-sm font-medium text-gray-700">No saved notices yet</p>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="text-xs text-gray-500 leading-relaxed">
             Paste a notice in the center panel and click Analyze to create one.
           </p>
+          {onNewNotice && (
+            <button
+              type="button"
+              onClick={onNewNotice}
+              className="mt-2 inline-flex items-center justify-center px-3 py-2 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-h-[40px] transition-colors"
+            >
+              Paste a notice
+            </button>
+          )}
         </div>
       )}
 

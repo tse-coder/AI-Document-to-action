@@ -31,6 +31,7 @@ export default function TextInput({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
 
     const trimmed = text.trim();
     if (!trimmed) {
@@ -64,8 +65,15 @@ export default function TextInput({
       <div>
         <h2 className="text-xl font-bold text-gray-900">Paste Your Notice</h2>
         <p className="text-sm text-gray-500 mt-0.5">
-          Paste an administrative announcement, policy memo, or procedural notice to turn it into an actionable checklist.
+          Paste an administrative announcement, policy memo, or procedural notice to turn it into an actionable checklist, or select a saved notice from the sidebar.
         </p>
+      </div>
+
+      <div className="flex items-center gap-2 p-3 bg-blue-50/80 border border-blue-200 rounded-lg text-xs text-blue-900">
+        <span className="font-bold select-none text-blue-700 text-sm" aria-hidden="true">💡</span>
+        <span>
+          <strong>Get started:</strong> Paste raw notice text below and click <em>Analyze Notice</em>, or select an existing document from the sidebar to inspect its source paragraphs and saved checklist.
+        </span>
       </div>
 
       {/* Optional Title Field */}
@@ -150,7 +158,7 @@ export default function TextInput({
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex items-center justify-center min-h-[40px] px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-md shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           {loading ? (
             <div className="flex items-center gap-2">

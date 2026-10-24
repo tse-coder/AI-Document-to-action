@@ -135,8 +135,22 @@ export default function DraftChecklist({
         </span>
       </div>
 
-      {/* Desktop Table View (FE-11) */}
-      <div className="hidden md:block overflow-x-auto border border-gray-200 rounded-lg bg-white shadow-sm">
+      {tasks.length === 0 ? (
+        <div className="p-6 rounded-lg border border-dashed border-amber-300 bg-amber-50/70 text-center space-y-2">
+          <div className="w-9 h-9 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-base font-bold select-none" aria-hidden="true">
+            ℹ️
+          </div>
+          <h4 className="text-sm font-bold text-amber-900">
+            No actionable tasks found in this notice
+          </h4>
+          <p className="text-xs text-amber-800 max-w-sm mx-auto leading-relaxed">
+            The notice was analyzed, but no mandatory deadlines, requirements, or procedural actions could be identified.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Desktop Table View (FE-11) */}
+          <div className="hidden md:block overflow-x-auto border border-gray-200 rounded-lg bg-white shadow-sm">
         <table
           className="w-full text-left text-xs divide-y divide-gray-200"
           aria-label="Draft tasks table"
@@ -482,42 +496,50 @@ export default function DraftChecklist({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                 {/* Owner field */}
                 <div>
-                  <span className="block text-xs font-semibold text-gray-600 mb-1">
+                  <label
+                    htmlFor={`m-owner-${task.client_id}`}
+                    className="block text-xs font-semibold text-gray-600 mb-1"
+                  >
                     Owner
-                  </span>
+                  </label>
                   {readOnly ? (
                     <span className="text-xs font-medium text-gray-800">
                       {task.owner || "Not stated"}
                     </span>
                   ) : (
                     <input
+                      id={`m-owner-${task.client_id}`}
                       type="text"
                       value={task.owner ?? ""}
                       onChange={(e) => handleOwnerChange(task, e.target.value)}
                       placeholder="e.g. Student"
-                      className="w-full text-xs p-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full text-xs p-2 min-h-[40px] border border-gray-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     />
                   )}
                 </div>
 
                 {/* Deadline field */}
                 <div>
-                  <span className="block text-xs font-semibold text-gray-600 mb-1">
+                  <label
+                    htmlFor={`m-deadline-${task.client_id}`}
+                    className="block text-xs font-semibold text-gray-600 mb-1"
+                  >
                     Deadline (YYYY-MM-DD)
-                  </span>
+                  </label>
                   {readOnly ? (
                     <span className="text-xs font-medium text-gray-800">
                       {task.deadline_date || "Not stated"}
                     </span>
                   ) : (
                     <input
+                      id={`m-deadline-${task.client_id}`}
                       type="text"
                       value={task.deadline_date ?? ""}
                       onChange={(e) =>
                         handleDeadlineChange(task, e.target.value)
                       }
                       placeholder="e.g. 2026-11-15"
-                      className="w-full text-xs p-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full text-xs p-2 min-h-[40px] border border-gray-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     />
                   )}
                 </div>
@@ -563,6 +585,8 @@ export default function DraftChecklist({
           );
         })}
       </div>
+    </>
+  )}
 
       {/* Absent Information Section (FE-11) */}
       {proposal.absent_information && proposal.absent_information.length > 0 && (

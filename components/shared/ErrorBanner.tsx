@@ -71,7 +71,7 @@ export default function ErrorBanner({
           type="button"
           onClick={onRetry}
           disabled={isLimitReached}
-          className={`px-3 py-1.5 text-xs font-bold rounded-md shadow-sm transition-all duration-150 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-red-500 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed ${buttonClasses}`}
+          className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-md shadow-sm transition-all duration-150 flex-shrink-0 inline-flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-red-500 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed ${buttonClasses}`}
         >
           {isLimitReached ? "Limit Reached" : "Retry"}
         </button>

@@ -242,7 +242,7 @@ export default function ClarificationForm({
                       type="button"
                       disabled={submitting}
                       onClick={() => handleToggleNotStated(q.question_id)}
-                      className={`text-xs px-2.5 py-1 rounded border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      className={`text-xs px-3 py-2 min-h-[40px] inline-flex items-center rounded border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                         entry.not_stated
                           ? "bg-amber-200 text-amber-950 border-amber-300 font-bold"
                           : "bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-300"
@@ -276,7 +276,7 @@ export default function ClarificationForm({
         <button
           type="submit"
           disabled={!allAnswered || submitting}
-          className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed rounded-md shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 flex items-center justify-center gap-1.5"
+          className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed rounded-md shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 flex items-center justify-center gap-1.5"
         >
           {submitting ? (
             <>
