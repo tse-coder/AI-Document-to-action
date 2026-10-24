@@ -63,6 +63,25 @@ function safeErrorMessage(code: string): string {
   return "The model could not complete this request. Retry the run.";
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function messagesWithoutRecordedAnswers(
+  messages: unknown[],
+  answers: { questionId: string; answer: string; notStated: boolean }[] | undefined,
+): unknown[] {
+  if (!answers?.length || messages.length === 0) return messages;
+  const last = messages[messages.length - 1];
+  if (!isRecord(last) || last.role !== "user" || typeof last.content !== "string") return messages;
+  const expectedContent = answers.map((answer) =>
+    answer.notStated
+      ? `${answer.questionId}: The user acknowledged this information is not stated.`
+      : `${answer.questionId}: ${answer.answer}`,
+  ).join("\n");
+  return last.content === expectedContent ? messages.slice(0, -1) : messages;
+}
+
 export async function runAgentPass(
   run: Run,
   options: {
@@ -76,12 +95,19 @@ export async function runAgentPass(
   if (!context) throw new ApiRequestError("RUN_NOT_FOUND", "Run not found.", 404);
 
   try {
+    const checklist = await readChecklist(run.doc_id);
+    const previousMessages = messagesWithoutRecordedAnswers(context.messages, options.answers);
     const result = (await withModelTimeout(runAgent({
       docId: run.doc_id,
       request: run.request,
       round: run.round,
-      previousMessages: context.messages,
+      previousMessages: previousMessages.length > 0 ? (previousMessages as any) : undefined,
       answers: options.answers ?? (context.answers.length ? context.answers : undefined),
+      paragraphIds: document.paragraphs.map((paragraph) => paragraph.paragraph_id),
+      paragraphTexts: new Map<string, string>(document.paragraphs.map(
+        (paragraph): [string, string] => [paragraph.paragraph_id, paragraph.text],
+      )),
+      existingTaskIds: checklist.tasks.map((task) => task.task_id),
       simulateFailure: options.clearSimulatedFailure ? "none" : context.simulateFailure,
       searchDocument: ({ doc_id, query, max_results }) =>
         searchDocument(doc_id, query, max_results ?? 5),
