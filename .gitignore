@@ -48,3 +48,6 @@ coverage/
 
 # Misc
 *.pem
+
+# Impeccable binary engine
+**/scripts/bin/
