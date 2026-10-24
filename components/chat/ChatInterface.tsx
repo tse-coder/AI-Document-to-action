@@ -82,7 +82,7 @@ export default function ChatInterface({
       {/* Message Feed */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-1 scroll-smooth"
+        className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-3.5 scroll-smooth"
       >
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4 max-w-md mx-auto">

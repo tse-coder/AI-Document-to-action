@@ -92,7 +92,7 @@ export default function ChatMessageItem({
 
       {/* Message Bubble Content */}
       <div
-        className={`max-w-[88%] sm:max-w-[80%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
+        className={`max-w-[88%] sm:max-w-[80%] rounded-xl px-4 py-3 sm:px-4.5 sm:py-3.5 text-sm leading-relaxed ${
           isUser
             ? "bg-slate-900 text-white rounded-tr-xs shadow-xs"
             : "bg-white text-slate-900 border border-slate-200/90 rounded-tl-xs shadow-2xs"
@@ -115,13 +115,25 @@ export default function ChatMessageItem({
 
         {/* Notice Submission Card Header */}
         {message.type === "notice_submission" && message.metadata && (
-          <div className="mb-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+          <div
+            className={`mb-2.5 p-2.5 rounded-lg text-xs ${
+              isUser
+                ? "bg-slate-800/90 border border-slate-700 text-slate-200"
+                : "bg-slate-50 border border-slate-200 text-slate-700"
+            }`}
+          >
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-800 truncate">
+              <span className="font-semibold truncate">
                 {message.metadata.docTitle || "Notice submitted"}
               </span>
               {message.metadata.paragraphCount && (
-                <span className="text-[10px] font-mono bg-slate-200/80 px-1.5 py-0.5 rounded text-slate-700">
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                    isUser
+                      ? "bg-slate-700 text-slate-200"
+                      : "bg-slate-200/80 text-slate-700"
+                  }`}
+                >
                   {message.metadata.paragraphCount} paragraphs
                 </span>
               )}
@@ -130,7 +142,11 @@ export default function ChatMessageItem({
         )}
 
         {/* Body Text with styled paragraph citations */}
-        <div className="whitespace-pre-wrap break-words text-slate-800">
+        <div
+          className={`whitespace-pre-wrap break-words leading-relaxed ${
+            isUser ? "text-white" : "text-slate-800"
+          }`}
+        >
           {message.text}
         </div>
 

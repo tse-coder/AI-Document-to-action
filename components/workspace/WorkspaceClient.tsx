@@ -4,7 +4,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 
 import SavedNoticesList from "@/components/sidebar/SavedNoticesList";
 import ChatInterface from "@/components/chat/ChatInterface";
@@ -25,7 +25,10 @@ import Link from "next/link";
 
 type ActiveTab = "notices" | "chat" | "checklist";
 
-export default function Home({ guestMode = false }: { guestMode?: boolean }) {
+export default function Home({ guestMode }: { guestMode?: boolean }) {
+  const { isSignedIn, isLoaded } = useAuth();
+  const isGuest = guestMode !== undefined ? guestMode : Boolean(isLoaded && !isSignedIn);
+
   // Mobile active tab state for switching panels on small screens
   const [activeTab, setActiveTab] = useState<ActiveTab>("chat");
 
@@ -123,12 +126,12 @@ export default function Home({ guestMode = false }: { guestMode?: boolean }) {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white text-gray-900">
       {/* Top Application Header */}
-      <header className="h-13 border-b border-slate-200 bg-white px-4 sm:px-6 flex items-center justify-between flex-shrink-0 z-10">
+      <header className="min-h-[56px] border-b border-slate-200 bg-white px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between flex-shrink-0 z-10 shadow-2xs">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-            <div className="w-7 h-7 rounded-md bg-[#1765F5] flex items-center justify-center text-white shadow-xs group-hover:bg-blue-600 transition-colors">
+          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#1765F5] flex items-center justify-center text-white shadow-xs group-hover:bg-blue-600 transition-colors">
               <svg
-                className="w-4 h-4"
+                className="w-4.5 h-4.5"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -142,23 +145,23 @@ export default function Home({ guestMode = false }: { guestMode?: boolean }) {
                 <line x1="9" y1="17" x2="13" y2="17" />
               </svg>
             </div>
-            <span className="font-bold text-sm tracking-tight text-[#10264A]">
+            <span className="font-bold text-base tracking-tight text-[#10264A]">
               Doc2Action
             </span>
           </Link>
 
-          <span className="text-slate-300 select-none">/</span>
+          <span className="text-slate-300 select-none mx-0.5">/</span>
 
-          <span className="text-xs sm:text-sm font-medium text-slate-700 truncate max-w-[200px] sm:max-w-md">
+          <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate max-w-[220px] sm:max-w-lg">
             {displayTitle}
           </span>
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          {guestMode ? (
+          {isGuest ? (
             <Link
               href="/sign-in"
-              className="text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md transition-colors"
+              className="text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3.5 py-1.5 rounded-lg transition-colors"
             >
               Sign in
             </Link>
@@ -168,7 +171,7 @@ export default function Home({ guestMode = false }: { guestMode?: boolean }) {
         </div>
       </header>
 
-      {guestMode && (
+      {isGuest && (
         <div role="status" className="flex-shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">
           Guest demo: changes are temporary and use sample data. <Link href="/sign-in" className="font-semibold underline">Sign in</Link> to use your account.
         </div>
