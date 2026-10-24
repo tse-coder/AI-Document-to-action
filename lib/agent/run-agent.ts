@@ -52,13 +52,13 @@ export interface AgentParams {
   docId: string;
   request: string;
   round?: number;
-  previousMessages?: CoreMessage[];
+  previousMessages?: CoreMessage[] | unknown[];
   answers?: { questionId: string; answer: string; notStated: boolean }[];
   simulateFailure?: "none" | "model" | "tool";
   // Paragraph lookup for validation:
-  paragraphIds: Set<string>;
-  paragraphTexts: Map<string, string>;
-  existingTaskIds?: Set<string>;
+  paragraphIds?: string[] | Set<string>;
+  paragraphTexts?: Map<string, string>;
+  existingTaskIds?: string[] | Set<string>;
   // Injected tool implementations:
   searchDocument: (args: {
     doc_id: string;
@@ -105,7 +105,7 @@ export async function runAgent(params: AgentParams): Promise<AgentResult> {
 
   // 2. Build conversation messages
   const messages: CoreMessage[] = params.previousMessages
-    ? [...params.previousMessages]
+    ? [...(params.previousMessages as CoreMessage[])]
     : [
         {
           role: "user",
@@ -322,11 +322,34 @@ export async function runAgent(params: AgentParams): Promise<AgentResult> {
       };
     });
 
+    // Extract and fallback paragraph metadata for validation
+    const paragraphIds =
+      params.paragraphIds instanceof Set
+        ? params.paragraphIds
+        : new Set(params.paragraphIds || []);
+    const paragraphTexts = params.paragraphTexts || new Map<string, string>();
+
+    if (paragraphIds.size === 0) {
+      try {
+        const docResult = await params.searchDocument({
+          doc_id: params.docId,
+          query: "",
+          max_results: 40,
+        });
+        for (const m of docResult.matches) {
+          paragraphIds.add(m.paragraph_id);
+          paragraphTexts.set(m.paragraph_id, m.text);
+        }
+      } catch {
+        // Continue if tool fetch fails
+      }
+    }
+
     // Run deterministic validation
     const validationResult = validateProposal({
       tasks: tasksWithSources,
-      paragraphIds: params.paragraphIds,
-      paragraphTexts: params.paragraphTexts,
+      paragraphIds,
+      paragraphTexts,
       existingTaskIds,
       round,
     });
