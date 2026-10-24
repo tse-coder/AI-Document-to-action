@@ -25,7 +25,7 @@ import {
   mockRunAwaitingApproval,
   mockRunError,
   mockChecklists,
-  mockChecklistDetailN1,
+  mockChecklistDetailsByDocId,
   mockConfirmResponse,
 } from "./mock-data";
 
@@ -202,7 +202,16 @@ export async function getChecklists(): Promise<{
 export async function getChecklist(docId: string): Promise<ChecklistDetail> {
   if (isMock()) {
     await delay();
-    return mockChecklistDetailN1;
+    const checklist = mockChecklistDetailsByDocId[docId];
+    if (checklist) return checklist;
+
+    const document = mockDocuments.find((doc) => doc.doc_id === docId);
+    return {
+      doc_id: docId,
+      title: document?.title ?? "Unknown notice",
+      last_saved_at: "",
+      tasks: [],
+    };
   }
   return request(`/checklists/${docId}`);
 }
