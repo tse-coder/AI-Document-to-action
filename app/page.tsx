@@ -10,6 +10,8 @@ import TextInput from "@/components/document/TextInput";
 import ParagraphViewer from "@/components/document/ParagraphViewer";
 import SavedChecklist from "@/components/checklist/SavedChecklist";
 import DraftChecklist from "@/components/checklist/DraftChecklist";
+import ClarificationForm from "@/components/checklist/ClarificationForm";
+import ApproveButton from "@/components/checklist/ApproveButton";
 import ErrorBanner from "@/components/shared/ErrorBanner";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
@@ -38,6 +40,14 @@ export default function Home() {
     draftText,
     editedTasks,
     updateTask,
+    submittingAnswers,
+    answerError,
+    answerQuestions,
+    confirming,
+    confirmError,
+    confirmValidationErrors,
+    saveSuccessMessage,
+    confirmDraft,
     highlightedParas,
     setHighlightedParas,
     selectDocument,
@@ -77,6 +87,12 @@ export default function Home() {
   if (analyzing || run?.status === "running") {
     panelStatus = "Reading notice...";
     panelStatusClasses = "bg-blue-100 text-blue-800 animate-pulse";
+  } else if (submittingAnswers) {
+    panelStatus = "Updating draft...";
+    panelStatusClasses = "bg-amber-100 text-amber-800 animate-pulse";
+  } else if (confirming) {
+    panelStatus = "Saving checklist...";
+    panelStatusClasses = "bg-emerald-100 text-emerald-800 animate-pulse";
   } else if (run?.status === "error") {
     panelStatus = "Error";
     panelStatusClasses = "bg-red-100 text-red-800";
@@ -260,6 +276,19 @@ export default function Home() {
             </span>
           </div>
 
+          {/* Success Banner (FE-16) */}
+          {saveSuccessMessage && (
+            <div
+              role="status"
+              className="mb-4 p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-xs font-semibold text-emerald-900 flex items-center gap-2 shadow-sm"
+            >
+              <span className="text-sm select-none" aria-hidden="true">
+                ✅
+              </span>
+              <span>{saveSuccessMessage}</span>
+            </div>
+          )}
+
           {/* Active Analysis Flow States (FE-10) */}
           {analyzing || run?.status === "running" ? (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
@@ -275,12 +304,27 @@ export default function Home() {
                   run.error?.message ||
                   "The model did not respond in time. Click Retry to try again."
                 }
+                attempt={(run.retry_count || 0) + 1}
+                maxAttempts={3}
                 onRetry={retryAnalysis}
               />
               <p className="text-xs text-gray-500">
                 Your pasted text has been preserved in the center panel.
               </p>
             </div>
+          ) : run?.status === "needs_clarification" && run.questions?.length > 0 ? (
+            <ClarificationForm
+              questions={run.questions}
+              submitting={submittingAnswers}
+              error={answerError}
+              onSubmit={answerQuestions}
+              onSourceRefClick={(refs) => {
+                setHighlightedParas(refs);
+                if (typeof window !== "undefined" && window.innerWidth < 768) {
+                  setActiveTab("document");
+                }
+              }}
+            />
           ) : run?.status === "needs_clarification" ? (
             <div className="space-y-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
               <div className="flex items-center gap-2">
@@ -290,22 +334,46 @@ export default function Home() {
                 </h3>
               </div>
               <p className="text-xs text-amber-800 leading-relaxed">
-                The agent identified {run.questions.length} question(s) regarding missing details.
+                No open questions remaining.
               </p>
             </div>
           ) : run?.status === "awaiting_approval" && run.proposal ? (
-            <DraftChecklist
-              proposal={run.proposal}
-              tasks={editedTasks.length > 0 ? editedTasks : run.proposal.tasks}
-              onTaskChange={updateTask}
-              onSourceRefClick={(refs) => {
-                setHighlightedParas(refs);
-                if (typeof window !== "undefined" && window.innerWidth < 768) {
-                  setActiveTab("document");
+            <div className="space-y-4">
+              <DraftChecklist
+                proposal={run.proposal}
+                tasks={
+                  editedTasks.length > 0 ? editedTasks : run.proposal.tasks
                 }
-              }}
-              highlightedRefs={highlightedParas}
-            />
+                serverErrors={confirmValidationErrors}
+                onTaskChange={updateTask}
+                onSourceRefClick={(refs) => {
+                  setHighlightedParas(refs);
+                  if (typeof window !== "undefined" && window.innerWidth < 768) {
+                    setActiveTab("document");
+                  }
+                }}
+                highlightedRefs={highlightedParas}
+              />
+
+              {confirmError && (
+                <ErrorBanner message={confirmError} />
+              )}
+
+              <ApproveButton
+                disabled={
+                  confirming ||
+                  (run.questions && run.questions.length > 0) ||
+                  (editedTasks.length === 0 && run.proposal.tasks.length === 0)
+                }
+                loading={confirming}
+                taskCount={
+                  editedTasks.length > 0
+                    ? editedTasks.length
+                    : run.proposal.tasks.length
+                }
+                onApprove={confirmDraft}
+              />
+            </div>
           ) : run?.status === "awaiting_approval" ? (
             <div className="space-y-3 p-3 bg-indigo-50 border border-indigo-200 rounded-md">
               <div className="flex items-center gap-2">
@@ -337,20 +405,24 @@ export default function Home() {
                   <SavedChecklist
                     checklist={checklist}
                     onSourceRefClick={(refId) => setHighlightedParas([refId])}
+                    onNewAnalysis={handleNewNotice}
                   />
                 )}
 
               {!checklistLoading &&
                 !checklistError &&
                 (!checklist || checklist.tasks.length === 0) && (
-                  <div className="p-4 rounded-md border border-dashed border-gray-300 bg-white">
-                    <p className="text-sm font-medium text-gray-700">
-                      No saved checklist for this notice yet.
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Approve a draft checklist to save tasks for this notice.
-                    </p>
-                  </div>
+                  <SavedChecklist
+                    checklist={
+                      checklist ?? {
+                        doc_id: selectedDocId,
+                        title: displayTitle,
+                        last_saved_at: null,
+                        tasks: [],
+                      }
+                    }
+                    onNewAnalysis={handleNewNotice}
+                  />
                 )}
             </div>
           ) : (
