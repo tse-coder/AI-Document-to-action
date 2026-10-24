@@ -8,12 +8,6 @@ export default function ProblemSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           {/* Left Column: The Problem Narrative */}
           <div className="lg:col-span-6 space-y-6">
-            <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#EBF3FF] text-[#1765F5] border border-blue-200/60">
-                The Problem
-              </span>
-            </div>
-
             <div className="space-y-3">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-[#10264A] tracking-tight leading-tight">
                 From Dense Circulars to<br />Clear Execution

@@ -4,12 +4,7 @@ export default function CoreFeaturesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="max-w-3xl mb-14">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#EBF3FF] text-[#1765F5] border border-blue-200/60">
-              Core Features
-            </span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#10264A] tracking-tight mt-3">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#10264A] tracking-tight">
             Built for Administrative Rigor
           </h2>
           <p className="text-sm sm:text-base text-slate-600 mt-2">
