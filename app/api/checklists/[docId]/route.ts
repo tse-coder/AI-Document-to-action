@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { errorResponse } from "../../../../lib/api-response";
-import { getChecklist } from "../../../../lib/db/queries";
+import { getChecklist, deleteChecklist } from "../../../../lib/db/queries";
 
 export async function GET(
   _request: NextRequest,
@@ -19,5 +19,33 @@ export async function GET(
     return NextResponse.json({ ok: true, data: checklist });
   } catch (error) {
     return errorResponse(error, "Checklist could not be loaded.");
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ docId: string }> }
+) {
+  const { docId } = await params;
+
+  try {
+    const deleted = await deleteChecklist(docId);
+    if (!deleted) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: {
+            code: "DOCUMENT_NOT_FOUND",
+            message: "Document not found.",
+            retryable: false,
+            details: [],
+          },
+        },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({ ok: true, data: { doc_id: docId, deleted: true } });
+  } catch (error) {
+    return errorResponse(error, "Checklist could not be deleted.");
   }
 }
