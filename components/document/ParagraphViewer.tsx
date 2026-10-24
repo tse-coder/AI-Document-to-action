@@ -1,25 +1,53 @@
 // Owner: Member 2 (Frontend Engineer)
-// Displays numbered paragraphs (P1, P2...) with highlight support (FE-09, used by FE-07)
+// Displays numbered paragraphs (P1, P2...) with auto-scroll and highlight support (FE-09)
 
 "use client";
 
+import { useEffect, useMemo, useRef } from "react";
 import type { Paragraph } from "@/lib/types";
 
 interface Props {
   paragraphs: Paragraph[];
-  highlightedRefs?: string[]; // paragraph_ids to highlight
+  highlightedIds?: string[];
+  highlightedRefs?: string[]; // alias for compatibility
   onParagraphClick?: (paragraphId: string) => void;
 }
 
 export default function ParagraphViewer({
   paragraphs,
-  highlightedRefs = [],
+  highlightedIds,
+  highlightedRefs,
   onParagraphClick,
 }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const activeHighlights = useMemo(
+    () => highlightedIds ?? highlightedRefs ?? [],
+    [highlightedIds, highlightedRefs]
+  );
+
+  // Smoothly scroll the first highlighted paragraph into view
+  useEffect(() => {
+    if (activeHighlights.length > 0 && typeof window !== "undefined") {
+      const firstId = activeHighlights[0];
+      const target =
+        containerRef.current?.querySelector(`[data-para-id="${firstId}"]`) ||
+        document.getElementById(firstId);
+
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [activeHighlights]);
+
   return (
-    <div className="space-y-3" role="feed" aria-label="Document paragraphs">
+    <div
+      ref={containerRef}
+      className="space-y-3"
+      role="feed"
+      aria-label="Document paragraphs"
+    >
       {paragraphs.map((p) => {
-        const isHighlighted = highlightedRefs.includes(p.paragraph_id);
+        const isHighlighted = activeHighlights.includes(p.paragraph_id);
 
         return (
           <div
@@ -34,22 +62,24 @@ export default function ParagraphViewer({
                 onParagraphClick?.(p.paragraph_id);
               }
             }}
-            className={`flex items-start gap-3 p-3 rounded-md transition-colors border ${
+            className={`flex items-start gap-3 p-3.5 rounded-md transition-all duration-200 border cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
               isHighlighted
-                ? "bg-amber-50 border-amber-300 ring-2 ring-amber-400"
-                : "bg-white border-gray-100 hover:border-gray-200"
+                ? "bg-amber-50 border-amber-300 ring-2 ring-amber-400 shadow-sm"
+                : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
             }`}
           >
             <span
-              className={`text-xs font-mono font-semibold px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5 select-none ${
+              className={`text-xs font-mono font-bold px-2 py-0.5 rounded flex-shrink-0 mt-0.5 select-none transition-colors ${
                 isHighlighted
-                  ? "bg-amber-200 text-amber-900"
-                  : "bg-gray-100 text-gray-600"
+                  ? "bg-amber-200 text-amber-900 border border-amber-300"
+                  : "bg-gray-100 text-gray-700 border border-gray-200"
               }`}
             >
               P{p.position}
             </span>
-            <p className="text-sm leading-relaxed text-gray-800">{p.text}</p>
+            <p className="text-sm leading-relaxed text-gray-800 select-text">
+              {p.text}
+            </p>
           </div>
         );
       })}
