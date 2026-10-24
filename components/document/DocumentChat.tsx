@@ -6,6 +6,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { sendChatMessage, type ChatMessage } from "@/lib/api-client";
+import type { TaskBase } from "@/lib/types";
 import {
   SparklesIcon,
   UserIcon,
@@ -17,6 +18,7 @@ interface Props {
   docId: string;
   docTitle?: string;
   onCitationClick?: (paragraphId: string) => void;
+  checklistTasks?: TaskBase[];
 }
 
 const SUGGESTIONS = [
@@ -30,6 +32,7 @@ export default function DocumentChat({
   docId,
   docTitle,
   onCitationClick,
+  checklistTasks,
 }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -66,7 +69,7 @@ export default function DocumentChat({
     setLoading(true);
 
     try {
-      const res = await sendChatMessage(docId, query, messages);
+      const res = await sendChatMessage(docId, query, messages, checklistTasks);
       const assistantMsg: ChatMessage = {
         id: `a-${Date.now()}`,
         role: "assistant",

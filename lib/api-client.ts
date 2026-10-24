@@ -266,7 +266,8 @@ export interface ChatMessage {
 export async function sendChatMessage(
   docId: string,
   message: string,
-  history: ChatMessage[] = []
+  history: ChatMessage[] = [],
+  checklistTasks?: unknown[]
 ): Promise<{ answer: string; cited_paragraphs: string[] }> {
   if (isMock()) {
     await delay(250);
@@ -277,7 +278,7 @@ export async function sendChatMessage(
   }
   return request("/chat", {
     method: "POST",
-    body: JSON.stringify({ doc_id: docId, message, history }),
+    body: JSON.stringify({ doc_id: docId, message, history, checklist_tasks: checklistTasks }),
   });
 }
 

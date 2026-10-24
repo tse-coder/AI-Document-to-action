@@ -6,7 +6,18 @@ import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { errorResponse, parseJson, ApiRequestError } from "../../../lib/api-response";
 import { requireApiAuth } from "../../../lib/require-api-auth";
-import { getDocumentWithParagraphs } from "../../../lib/db/queries";
+import { getDocumentWithParagraphs, readChecklist } from "../../../lib/db/queries";
+
+interface ChatChecklistTask {
+  task_id?: string;
+  client_id?: string;
+  description?: string;
+  owner?: string | null;
+  deadline_date?: string | null;
+  deadline_text?: string | null;
+  condition?: string | null;
+  source_refs?: string[];
+}
 
 export async function POST(request: NextRequest) {
   const authError = await requireApiAuth();
@@ -18,6 +29,7 @@ export async function POST(request: NextRequest) {
       doc_id?: string;
       message?: string;
       history?: { role: "user" | "assistant"; content: string }[];
+      checklist_tasks?: ChatChecklistTask[];
     };
 
     if (!body.doc_id || typeof body.doc_id !== "string") {
@@ -32,6 +44,30 @@ export async function POST(request: NextRequest) {
       throw new ApiRequestError("DOCUMENT_NOT_FOUND", "Document not found.", 404);
     }
 
+    // Retrieve current checklist tasks from body or database
+    let checklistContext = "No checklist tasks currently recorded for this notice.";
+    let tasks: ChatChecklistTask[] | undefined = body.checklist_tasks;
+    if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
+      const dbChecklist = await readChecklist(body.doc_id.trim());
+      if (dbChecklist.tasks && dbChecklist.tasks.length > 0) {
+        tasks = dbChecklist.tasks;
+      }
+    }
+
+    if (tasks && tasks.length > 0) {
+      checklistContext = tasks
+        .map((t: ChatChecklistTask, idx: number) => {
+          const id = t.task_id || t.client_id || `Task-${idx + 1}`;
+          const lines = [`• [${id}] ${t.description || ""}`];
+          lines.push(`  Owner: ${t.owner || "[Unassigned / Not stated]"}`);
+          lines.push(`  Deadline: ${t.deadline_date || t.deadline_text || "[No deadline specified]"}`);
+          if (t.condition) lines.push(`  Condition/Exemption: ${t.condition}`);
+          if (t.source_refs && t.source_refs.length > 0) lines.push(`  Sources: ${t.source_refs.join(", ")}`);
+          return lines.join("\n");
+        })
+        .join("\n\n");
+    }
+
     const paragraphsText = docResult.paragraphs
       .map((p) => `[${p.paragraph_id}] (Paragraph ${p.position}): ${p.text}`)
       .join("\n\n");
@@ -41,11 +77,15 @@ export async function POST(request: NextRequest) {
 Here are the numbered paragraphs of the notice:
 ${paragraphsText}
 
+Here is the current Checklist for this notice:
+${checklistContext}
+
 Guidelines:
-1. Answer the user's questions clearly, accurately, and concisely based strictly on the text.
+1. Answer the user's questions clearly, accurately, and concisely based strictly on the text and the current checklist.
 2. ALWAYS cite the source paragraphs in square brackets, for example [${docResult.paragraphs[0]?.paragraph_id || "P1"}] or [P2], whenever referencing requirements, deadlines, fees, owners, or exceptions.
-3. If the notice does not contain the information, state clearly that it is not mentioned in the notice.
-4. Keep responses well-structured and helpful for turning administrative text into action items.`;
+3. If the user asks about the checklist, its tasks, any issues, missing items, deadlines, owners, or conditions, evaluate the current Checklist above against the document paragraphs and provide a clear, helpful critique.
+4. If the notice does not contain the information, state clearly that it is not mentioned in the notice.
+5. Keep responses well-structured and helpful for turning administrative text into action items.`;
 
     const history = Array.isArray(body.history) ? body.history : [];
     const conversation = [
@@ -62,7 +102,7 @@ Guidelines:
     if (apiKey && apiKey !== "your-gemini-api-key-here") {
       try {
         const response = await generateText({
-          model: google("gemini-2.5-flash"),
+          model: google(process.env.GEMINI_MODEL || "gemini-3.5-flash-lite"),
           system: systemPrompt,
           messages: conversation,
         });

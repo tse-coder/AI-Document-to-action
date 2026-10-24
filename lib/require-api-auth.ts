@@ -1,10 +1,21 @@
 import { auth } from "@clerk/nextjs/server";
-import { apiError } from "./api-response";
 
-/** Require a Clerk session for a private API route. */
+/**
+ * Returns the Clerk userId if authenticated, or null for guest requests.
+ */
+export async function getOptionalUserId(): Promise<string | null> {
+  try {
+    const session = await auth();
+    return session.userId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Optional API auth guard: does not reject guest requests with 401,
+ * allowing guests to access sample/guest data and authenticated users to access their own data.
+ */
 export async function requireApiAuth() {
-  const { isAuthenticated } = await auth();
-  if (isAuthenticated) return null;
-
-  return apiError("UNAUTHENTICATED", "Sign in to use this endpoint.", 401);
+  return null;
 }
