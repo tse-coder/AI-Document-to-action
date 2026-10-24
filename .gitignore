@@ -11,6 +11,7 @@ out/
 # Build
 build/
 dist/
+f-docs/
 
 # Environment variables
 .env
@@ -51,3 +52,8 @@ coverage/
 
 # Impeccable binary engine
 **/scripts/bin/
+
+# Skills & Agents
+.agents/
+*.skill
+
