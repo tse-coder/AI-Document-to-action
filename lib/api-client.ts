@@ -125,6 +125,25 @@ export async function getDocument(
   return request(`/documents/${docId}`);
 }
 
+export async function deleteDocument(
+  docId: string
+): Promise<{ doc_id: string; deleted: boolean }> {
+  if (isMock()) {
+    await delay();
+    const idx = mockDocuments.findIndex((d) => d.doc_id === docId);
+    if (idx !== -1) {
+      mockDocuments.splice(idx, 1);
+    }
+    delete mockParagraphsByDocId[docId];
+    delete mockChecklistDetailsByDocId[docId];
+    return { doc_id: docId, deleted: true };
+  }
+  return request(`/documents/${encodeURIComponent(docId)}`, {
+    method: "DELETE",
+  });
+}
+
+
 // --- Runs ---
 
 export async function createRun(body: CreateRunRequest): Promise<{ run: Run }> {

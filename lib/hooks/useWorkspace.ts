@@ -11,6 +11,7 @@ import {
   confirmRun,
   createRun,
   deleteChecklist,
+  deleteDocument,
   getChecklist,
   getDocument,
   getDocuments,
@@ -492,6 +493,31 @@ export function useWorkspace() {
     [activeDocument?.title, loadDocuments]
   );
 
+  const deleteSavedNotice = useCallback(
+    async (docId: string) => {
+      try {
+        await deleteDocument(docId);
+        if (selectedDocId === docId) {
+          clearSelection();
+        }
+        setBanner({
+          kind: "success",
+          message: "Notice deleted successfully.",
+        });
+        await loadDocuments();
+      } catch (err) {
+        setBanner({
+          kind: "error",
+          message: friendlyMessage(
+            err,
+            "Could not delete notice. Please try again."
+          ),
+        });
+      }
+    },
+    [selectedDocId, clearSelection, loadDocuments]
+  );
+
   return {
     documents,
     documentsLoading,
@@ -505,6 +531,7 @@ export function useWorkspace() {
     checklistLoading,
     checklistError,
     deleteSavedChecklist,
+    deleteSavedNotice,
     run,
     setRun,
     analyzing,

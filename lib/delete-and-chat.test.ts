@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { deleteChecklist, sendChatMessage } from "./api-client";
+import { deleteChecklist, deleteDocument, sendChatMessage } from "./api-client";
 
 describe("Checklist Deletion & Document Chat Functionality", () => {
   const originalEnv = process.env.NEXT_PUBLIC_USE_MOCK;
@@ -20,6 +20,16 @@ describe("Checklist Deletion & Document Chat Functionality", () => {
       expect(result.deleted).toBe(true);
     });
   });
+
+  describe("Delete Document/Notice Functionality", () => {
+    it("successfully calls deleteDocument and returns deleted confirmation", async () => {
+      const result = await deleteDocument("N1");
+      expect(result).toBeDefined();
+      expect(result.doc_id).toBe("N1");
+      expect(result.deleted).toBe(true);
+    });
+  });
+
 
   describe("Document Chat Assistant Functionality", () => {
     it("sends a chat query and receives an answer with cited paragraphs", async () => {
