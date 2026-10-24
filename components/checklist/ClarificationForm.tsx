@@ -6,6 +6,12 @@
 
 import { useId, useState } from "react";
 import type { AnswerInput, Question } from "@/lib/types";
+import {
+  AlertTriangleIcon,
+  UserIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+} from "@/components/icons";
 
 interface Props {
   questions: Question[];
@@ -139,9 +145,9 @@ export default function ClarificationForm({
       {error && (
         <div
           role="alert"
-          className="p-3 bg-red-50 border border-red-300 rounded-md text-xs text-red-700 flex items-start gap-2"
+          className="p-3 bg-red-50 border border-red-300 rounded-md text-xs text-red-700 flex items-start gap-2.5"
         >
-          <span className="text-base leading-none select-none">⚠️</span>
+          <AlertTriangleIcon className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <p className="font-semibold text-red-900">Submission Error</p>
             <p>{error}</p>
@@ -163,7 +169,7 @@ export default function ClarificationForm({
           return (
             <div
               key={q.question_id}
-              className="p-3.5 bg-white border border-amber-200/80 rounded-md shadow-sm space-y-2.5 transition-shadow hover:shadow-md"
+              className="p-3.5 bg-white border border-amber-200/80 rounded-md shadow-2xs space-y-2.5 transition-shadow hover:shadow-xs"
             >
               {/* Question Meta: Badges & Sources */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -171,8 +177,10 @@ export default function ClarificationForm({
                   <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900">
                     {q.question_id || `Q${idx + 1}`}
                   </span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-700 capitalize">
-                    {q.field}
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-700 capitalize">
+                    {isOwner && <UserIcon className="w-3 h-3 text-gray-500" />}
+                    {isDeadline && <CalendarIcon className="w-3 h-3 text-gray-500" />}
+                    <span>{q.field}</span>
                   </span>
                 </div>
 
@@ -229,8 +237,9 @@ export default function ClarificationForm({
                     }`}
                   />
                   {entry.not_stated && (
-                    <span className="absolute right-2.5 top-2 text-xs text-amber-700 font-medium">
-                      ✓ Not stated
+                    <span className="absolute right-2.5 top-2 text-xs text-amber-700 font-medium inline-flex items-center gap-1">
+                      <CheckCircleIcon className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Not stated</span>
                     </span>
                   )}
                 </div>
@@ -242,15 +251,20 @@ export default function ClarificationForm({
                       type="button"
                       disabled={submitting}
                       onClick={() => handleToggleNotStated(q.question_id)}
-                      className={`text-xs px-3 py-2 min-h-[40px] inline-flex items-center rounded border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      className={`text-xs px-3 py-2 min-h-[40px] inline-flex items-center gap-1.5 rounded border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                         entry.not_stated
                           ? "bg-amber-200 text-amber-950 border-amber-300 font-bold"
                           : "bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-300"
                       }`}
                     >
-                      {entry.not_stated
-                        ? "✓ Marked: Not stated in notice"
-                        : "Not stated in notice"}
+                      {entry.not_stated ? (
+                        <>
+                          <CheckCircleIcon className="w-3.5 h-3.5 text-amber-900" />
+                          <span>Marked: Not stated in notice</span>
+                        </>
+                      ) : (
+                        <span>Not stated in notice</span>
+                      )}
                     </button>
                     <span className="text-[11px] text-gray-400">
                       {isDeadline

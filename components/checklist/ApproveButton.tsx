@@ -4,6 +4,8 @@
 
 "use client";
 
+import { CheckCircleIcon } from "@/components/icons";
+
 interface Props {
   disabled?: boolean;
   loading?: boolean;
@@ -32,7 +34,7 @@ export default function ApproveButton({
         onClick={handleClick}
         disabled={isDisabled}
         aria-busy={loading}
-        className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg shadow-sm transition-all duration-150 flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none"
+        className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg shadow-2xs transition-all duration-150 flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 select-none"
       >
         {loading ? (
           <>
@@ -61,7 +63,7 @@ export default function ApproveButton({
           </>
         ) : (
           <>
-            <span aria-hidden="true">✓</span>
+            <CheckCircleIcon className="w-4 h-4 text-white" />
             <span>
               Approve &amp; Save
               {taskCount !== undefined && taskCount > 0

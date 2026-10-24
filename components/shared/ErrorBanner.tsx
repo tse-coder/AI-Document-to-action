@@ -3,6 +3,8 @@
 
 "use client";
 
+import { AlertTriangleIcon, AlertCircleIcon, RefreshCwIcon } from "@/components/icons";
+
 interface ErrorBannerProps {
   message: string;
   attempt?: number;
@@ -45,11 +47,15 @@ export default function ErrorBanner({
   return (
     <div
       role="alert"
-      className={`p-4 border rounded-lg ${containerClasses} my-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm`}
+      className={`p-4 border rounded-lg ${containerClasses} my-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs`}
     >
       <div className="flex items-start gap-2.5">
-        <span className="text-lg select-none leading-none mt-0.5" aria-hidden="true">
-          {isWarning ? "⚠️" : "🚫"}
+        <span className="flex-shrink-0 mt-0.5" aria-hidden="true">
+          {isWarning ? (
+            <AlertTriangleIcon className="w-5 h-5 text-amber-600" />
+          ) : (
+            <AlertCircleIcon className="w-5 h-5 text-red-600" />
+          )}
         </span>
         <div className="space-y-0.5">
           <p className="text-xs font-bold uppercase tracking-wider text-red-900/80">
@@ -71,9 +77,10 @@ export default function ErrorBanner({
           type="button"
           onClick={onRetry}
           disabled={isLimitReached}
-          className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-md shadow-sm transition-all duration-150 flex-shrink-0 inline-flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-red-500 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed ${buttonClasses}`}
+          className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-md shadow-2xs transition-all duration-150 flex-shrink-0 inline-flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-red-500 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed ${buttonClasses}`}
         >
-          {isLimitReached ? "Limit Reached" : "Retry"}
+          {!isLimitReached && <RefreshCwIcon className="w-3.5 h-3.5" />}
+          <span>{isLimitReached ? "Limit Reached" : "Retry"}</span>
         </button>
       )}
     </div>

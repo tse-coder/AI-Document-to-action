@@ -6,6 +6,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { sendChatMessage, type ChatMessage } from "@/lib/api-client";
+import {
+  SparklesIcon,
+  UserIcon,
+  SendIcon,
+  AlertTriangleIcon,
+} from "@/components/icons";
 
 interface Props {
   docId: string;
@@ -125,10 +131,20 @@ export default function DocumentChat({
               className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
             >
               <div className="flex items-center gap-1.5 mb-1 text-[11px] text-gray-400 font-medium">
-                <span>{isUser ? "You" : "Document Assistant"}</span>
+                {isUser ? (
+                  <>
+                    <UserIcon className="w-3.5 h-3.5 text-gray-500" />
+                    <span>You</span>
+                  </>
+                ) : (
+                  <>
+                    <SparklesIcon className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="font-semibold text-gray-700">Document Assistant</span>
+                  </>
+                )}
               </div>
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-xs whitespace-pre-wrap ${
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-2xs whitespace-pre-wrap ${
                   isUser
                     ? "bg-blue-600 text-white rounded-tr-none"
                     : "bg-white text-gray-900 border border-gray-200 rounded-tl-none"
@@ -170,8 +186,9 @@ export default function DocumentChat({
 
         {/* Error Banner */}
         {error && (
-          <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">
-            ⚠️ {error}
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium flex items-center gap-2">
+            <AlertTriangleIcon className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -222,10 +239,10 @@ export default function DocumentChat({
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="px-4 py-2.5 min-h-[40px] bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs sm:text-sm font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+          className="px-4 py-2.5 min-h-[40px] bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs sm:text-sm font-bold rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
         >
+          <SendIcon className="w-3.5 h-3.5" />
           <span>Send</span>
-          <span aria-hidden="true">→</span>
         </button>
       </form>
     </div>

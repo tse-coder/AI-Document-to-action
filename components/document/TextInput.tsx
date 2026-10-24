@@ -4,6 +4,7 @@
 "use client";
 
 import { useState } from "react";
+import { SparklesIcon, AlertCircleIcon } from "@/components/icons";
 
 interface Props {
   initialTitle?: string;
@@ -70,7 +71,7 @@ export default function TextInput({
       </div>
 
       <div className="flex items-center gap-2 p-3 bg-blue-50/80 border border-blue-200 rounded-lg text-xs text-blue-900">
-        <span className="font-bold select-none text-blue-700 text-sm" aria-hidden="true">💡</span>
+        <SparklesIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
         <span>
           <strong>Get started:</strong> Paste raw notice text below and click <em>Analyze Notice</em>, or select an existing document from the sidebar to inspect its source paragraphs and saved checklist.
         </span>
@@ -142,10 +143,10 @@ export default function TextInput({
           <p
             id="notice-validation-error"
             role="alert"
-            className="mt-1.5 text-xs font-medium text-red-600 flex items-center gap-1"
+            className="mt-1.5 text-xs font-medium text-red-600 flex items-center gap-1.5"
           >
-            <span aria-hidden="true">⚠️</span>
-            {validationError}
+            <AlertCircleIcon className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+            <span>{validationError}</span>
           </p>
         )}
       </div>
@@ -158,7 +159,7 @@ export default function TextInput({
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center justify-center min-h-[40px] px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-md shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          className="inline-flex items-center justify-center min-h-[40px] px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-md shadow-2xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           {loading ? (
             <div className="flex items-center gap-2">
@@ -166,7 +167,10 @@ export default function TextInput({
               <span>Analyzing...</span>
             </div>
           ) : (
-            "Analyze Notice"
+            <div className="flex items-center gap-2">
+              <SparklesIcon className="w-4 h-4 text-white" />
+              <span>Analyze Notice</span>
+            </div>
           )}
         </button>
       </div>

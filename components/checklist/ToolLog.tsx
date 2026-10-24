@@ -6,6 +6,12 @@
 
 import { useState } from "react";
 import type { ToolLogEntry } from "@/lib/types";
+import {
+  WrenchIcon,
+  ChevronDownIcon,
+  CheckCircleIcon,
+  AlertCircleIcon,
+} from "@/components/icons";
 
 interface Props {
   toolLog?: ToolLogEntry[];
@@ -26,7 +32,7 @@ export default function ToolLog({ toolLog }: Props) {
   };
 
   return (
-    <div className="mt-4 border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+    <div className="mt-4 border border-gray-200 rounded-lg bg-white overflow-hidden shadow-2xs">
       {/* Collapsible Header Toggle (collapsed by default) */}
       <button
         type="button"
@@ -36,9 +42,7 @@ export default function ToolLog({ toolLog }: Props) {
         className="w-full min-h-[40px] px-3.5 py-2.5 bg-gray-50 hover:bg-gray-100 text-left flex items-center justify-between text-xs font-semibold text-gray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm select-none" aria-hidden="true">
-            🛠️
-          </span>
+          <WrenchIcon className="w-4 h-4 text-blue-600" />
           <span className="font-bold text-gray-900">Agent Tool Activity</span>
           <span className="px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-700 text-[11px] font-mono">
             {toolLog.length} {toolLog.length === 1 ? "call" : "calls"}
@@ -48,22 +52,11 @@ export default function ToolLog({ toolLog }: Props) {
           <span className="text-[11px] font-normal">
             {isOpen ? "Hide" : "Show"}
           </span>
-          <svg
+          <ChevronDownIcon
             className={`w-4 h-4 transform transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
             }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
+          />
         </div>
       </button>
 
@@ -101,13 +94,23 @@ export default function ToolLog({ toolLog }: Props) {
 
                     <div className="flex items-center gap-1.5 text-[11px]">
                       <span
-                        className={`font-semibold px-1.5 py-0.5 rounded text-[10px] ${
+                        className={`font-semibold px-2 py-0.5 rounded text-[10px] inline-flex items-center gap-1 ${
                           entry.ok
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-emerald-100 text-emerald-800"
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {entry.ok ? "✓ ok" : "✗ error"}
+                        {entry.ok ? (
+                          <>
+                            <CheckCircleIcon className="w-3 h-3 text-emerald-700" />
+                            <span>ok</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircleIcon className="w-3 h-3 text-red-700" />
+                            <span>error</span>
+                          </>
+                        )}
                       </span>
                       <span className="text-gray-500 font-mono text-[10px]">
                         {entry.duration_ms}ms
