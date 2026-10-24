@@ -51,7 +51,7 @@ export class ApiError extends Error {
   }
 }
 
-const BASE = "/api";
+// FE-14: Real endpoints are used by default; mock mode is active only when NEXT_PUBLIC_USE_MOCK is explicitly "true"
 const isMock = () => process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 const delay = (ms = 250): Promise<void> =>
