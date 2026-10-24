@@ -47,6 +47,8 @@ export type TaskInput = TaskBase;
 
 /** Persisted task fields; proposal-only client_id and action are not stored. */
 export interface SavedTask {
+  client_id?: string;
+  action?: TaskAction;
   task_id: string;
   doc_id: string;
   description: string;
