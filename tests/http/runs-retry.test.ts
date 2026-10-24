@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { Proposal } from "../../lib/types";
 
 vi.mock("../../lib/agent/run-agent", () => ({
   runAgent: vi.fn(),
@@ -111,7 +112,7 @@ describe.skipIf(!HAS_TEST_DATABASE)(
           return {
             ...base,
             proposal: {
-              ...(base.proposal as Record<string, any>),
+              ...(base.proposal as Proposal),
               summary:
                 submitted?.answer === "Student"
                   ? "retained submitted answer"
