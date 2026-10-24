@@ -2,6 +2,8 @@
 // GET /api/runs/:runId — Get current run state
 
 import { NextRequest, NextResponse } from "next/server";
+import { errorResponse } from "../../../../lib/api-response";
+import { getRunById, staleRunToError } from "../../../../lib/db/queries";
 
 export async function GET(
   _request: NextRequest,
@@ -9,17 +11,14 @@ export async function GET(
 ) {
   const { runId } = await params;
 
-  // TODO: Query run by ID, include questions, proposal, tool_log, limits
-  // Run stale check (if running && updated_at < 90s ago → set to error)
-  // Return 404 RUN_NOT_FOUND if not found
-
-  return NextResponse.json({
-    ok: false,
-    error: {
-      code: "NOT_IMPLEMENTED",
-      message: "GET /api/runs/:runId not yet implemented",
-      retryable: false,
-      details: [],
-    },
-  }, { status: 501 });
+  try {
+    await staleRunToError(runId);
+    const run = await getRunById(runId);
+    if (!run) return NextResponse.json({ ok: false, error: {
+      code: "RUN_NOT_FOUND", message: "Run not found.", retryable: false, details: [],
+    } }, { status: 404 });
+    return NextResponse.json({ ok: true, data: { run } });
+  } catch (error) {
+    return errorResponse(error, "Run state could not be loaded.");
+  }
 }

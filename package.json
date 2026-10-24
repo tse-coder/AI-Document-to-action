@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "db:apply": "psql \"$DATABASE_URL\" -f lib/db/schema.sql && psql \"$DATABASE_URL\" -f seed.sql",
-    "db:reset": "psql \"$DATABASE_URL\" -f lib/db/reset.sql"
+    "db:apply": "node scripts/db.mjs apply",
+    "db:reset": "node scripts/db.mjs reset"
   },
   "dependencies": {
     "@google/genai": "^2.31.0",

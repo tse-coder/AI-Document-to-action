@@ -2,11 +2,13 @@
 // GET /api/documents — List all documents (demo + pasted)
 
 import { NextResponse } from "next/server";
+import { errorResponse } from "../../../lib/api-response";
+import { getDocuments } from "../../../lib/db/queries";
 
 export async function GET() {
-  // TODO: Query documents table, return demo first then pasted by newest
-  return NextResponse.json({
-    ok: true,
-    data: { documents: [] },
-  });
+  try {
+    return NextResponse.json({ ok: true, data: { documents: await getDocuments() } });
+  } catch (error) {
+    return errorResponse(error, "Documents could not be loaded.");
+  }
 }

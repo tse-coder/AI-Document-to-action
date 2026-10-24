@@ -2,6 +2,8 @@
 // GET /api/checklists/:docId — Get saved checklist with source paragraphs
 
 import { NextRequest, NextResponse } from "next/server";
+import { errorResponse } from "../../../../lib/api-response";
+import { getChecklist } from "../../../../lib/db/queries";
 
 export async function GET(
   _request: NextRequest,
@@ -9,11 +11,13 @@ export async function GET(
 ) {
   const { docId } = await params;
 
-  // TODO: Query checklist_tasks + task_sources + paragraphs for this document
-  // Return 404 DOCUMENT_NOT_FOUND if not found
-
-  return NextResponse.json({
-    ok: true,
-    data: { doc_id: docId, title: "", last_saved_at: "", tasks: [] },
-  });
+  try {
+    const checklist = await getChecklist(docId);
+    if (!checklist) return NextResponse.json({ ok: false, error: {
+      code: "DOCUMENT_NOT_FOUND", message: "Document not found.", retryable: false, details: [],
+    } }, { status: 404 });
+    return NextResponse.json({ ok: true, data: checklist });
+  } catch (error) {
+    return errorResponse(error, "Checklist could not be loaded.");
+  }
 }

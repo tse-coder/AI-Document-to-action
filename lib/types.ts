@@ -42,9 +42,22 @@ export interface TaskBase {
   owner_source: OwnerSource;
 }
 
-export interface SavedTask extends TaskBase {
+export type Task = TaskBase;
+export type TaskInput = TaskBase;
+
+/** Persisted task fields; proposal-only client_id and action are not stored. */
+export interface SavedTask {
+  task_id: string;
   doc_id: string;
-  status: "open";
+  description: string;
+  source_refs: string[];
+  deadline_date: string | null;
+  deadline_text: string | null;
+  deadline_source: DeadlineSource;
+  condition: string | null;
+  owner: string | null;
+  owner_source: OwnerSource;
+  status: "open" | "done";
   updated_at: string;
 }
 
@@ -102,7 +115,7 @@ export interface ToolLogEntry {
   args: Record<string, unknown>;
   ok: boolean;
   result_summary: string;
-  result: Record<string, unknown>;
+  result: Record<string, unknown> | null;
   duration_ms: number;
   at: string;
 }
@@ -151,17 +164,29 @@ export interface Run {
 export interface ApiSuccess<T> {
   ok: true;
   data: T;
+  error?: never;
 }
 
 export interface ApiError {
   ok: false;
+  data?: never;
   error: {
     code: string;
     message: string;
     retryable: boolean;
     run_id?: string;
-    details: { field?: string; message: string }[];
+    details: ApiErrorDetail[];
   };
+}
+
+/** Structured validation details or field-level request errors. */
+export interface ApiErrorDetail {
+  field?: string;
+  message: string;
+  code?: string;
+  severity?: ValidationSeverity;
+  task_client_id?: string;
+  question_id?: string;
 }
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiError;
@@ -203,12 +228,93 @@ export interface ChecklistSummary {
   doc_id: string;
   title: string;
   task_count: number;
-  last_saved_at: string;
+  last_saved_at: string | null;
 }
 
 export interface ChecklistDetail {
   doc_id: string;
   title: string;
-  last_saved_at: string;
+  last_saved_at: string | null;
   tasks: SavedTaskWithSources[];
+}
+
+// --- Endpoint payloads ---
+
+export interface HealthData {
+  status: "ok";
+  db: "ok" | "error";
+  model: string;
+}
+
+export interface DocumentsData {
+  documents: Document[];
+}
+
+export interface DocumentData {
+  document: Document;
+  paragraphs: Paragraph[];
+}
+
+export interface RunData {
+  run: Run;
+}
+
+export interface ChecklistsData {
+  checklists: ChecklistSummary[];
+}
+
+export interface AnswerRequest {
+  answers: AnswerInput[];
+}
+
+// --- Agent/backend integration contract ---
+
+export interface SearchDocumentArgs {
+  doc_id: string;
+  query: string;
+  max_results?: number;
+}
+
+export interface SearchResult {
+  doc_id: string;
+  total_paragraphs: number;
+  matches: { paragraph_id: string; position: number; text: string; score: number }[];
+}
+
+/** Compact task shape returned by the read_checklist agent tool. */
+export interface ReadChecklistTask {
+  task_id: string;
+  description: string;
+  source_refs: string[];
+  deadline_date: string | null;
+  deadline_text: string | null;
+  condition: string | null;
+  owner: string | null;
+  status: "open" | "done";
+}
+
+export interface ReadChecklistResult {
+  doc_id: string;
+  tasks: ReadChecklistTask[];
+}
+
+export interface RunAgentParams {
+  docId: string;
+  request: string;
+  round: number;
+  previousMessages?: unknown[];
+  answers?: { questionId: string; answer: string; notStated: boolean }[];
+  simulateFailure?: "none" | "model" | "tool";
+  searchDocument: (args: SearchDocumentArgs) => Promise<SearchResult>;
+  readChecklist: (args: { doc_id: string }) => Promise<ReadChecklistResult>;
+}
+
+export interface AgentResult {
+  status: "awaiting_approval" | "needs_clarification" | "error";
+  proposal: Proposal | null;
+  questions: Question[];
+  toolLog: ToolLogEntry[];
+  messages: unknown[];
+  limitsUsed: { modelTurns: number; toolCalls: number; limitHit?: boolean };
+  error: RunError | null;
 }
