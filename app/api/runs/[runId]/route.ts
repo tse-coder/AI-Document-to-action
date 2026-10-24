@@ -4,11 +4,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { errorResponse } from "../../../../lib/api-response";
 import { getRunById, staleRunToError } from "../../../../lib/db/queries";
+import { requireApiAuth } from "../../../../lib/require-api-auth";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ runId: string }> }
 ) {
+  const authError = await requireApiAuth();
+  if (authError) return authError;
   const { runId } = await params;
 
   try {

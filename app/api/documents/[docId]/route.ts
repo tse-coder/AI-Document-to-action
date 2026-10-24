@@ -4,12 +4,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { errorResponse } from "../../../../lib/api-response";
+import { requireApiAuth } from "../../../../lib/require-api-auth";
 import { getDocumentWithParagraphs, deleteDocument } from "../../../../lib/db/queries";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ docId: string }> }
 ) {
+  const authError = await requireApiAuth();
+  if (authError) return authError;
   const { docId } = await params;
 
   try {
@@ -27,6 +30,8 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ docId: string }> }
 ) {
+  const authError = await requireApiAuth();
+  if (authError) return authError;
   const { docId } = await params;
 
   try {

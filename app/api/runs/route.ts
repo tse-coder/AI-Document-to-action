@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ApiRequestError, errorResponse, parseJson } from "../../../lib/api-response";
 import { createDocument, createRun, getDocumentWithParagraphs } from "../../../lib/db/queries";
 import { runAgentPass } from "../../../lib/run-service";
+import { requireApiAuth } from "../../../lib/require-api-auth";
 import type { CreateRunRequest } from "../../../lib/types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -12,6 +13,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireApiAuth();
+  if (authError) return authError;
+
   try {
     const raw = await parseJson(request);
     if (!isRecord(raw)) throw new ApiRequestError("INVALID_JSON", "Request body must be a JSON object.", 400);

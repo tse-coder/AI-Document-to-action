@@ -5,9 +5,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { errorResponse, parseJson, ApiRequestError } from "../../../lib/api-response";
+import { requireApiAuth } from "../../../lib/require-api-auth";
 import { getDocumentWithParagraphs } from "../../../lib/db/queries";
 
 export async function POST(request: NextRequest) {
+  const authError = await requireApiAuth();
+  if (authError) return authError;
+
   try {
     const raw = await parseJson(request);
     const body = raw as {

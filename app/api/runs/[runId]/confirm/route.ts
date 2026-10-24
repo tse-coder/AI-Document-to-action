@@ -8,6 +8,7 @@ import { ApiRequestError, apiError, errorResponse, parseJson } from "../../../..
 import { getDocumentWithParagraphs, getRunById, readChecklist, saveChecklist } from "../../../../../lib/db/queries";
 import { validateProposal } from "../../../../../lib/agent/validator";
 import type { TaskBase, ValidationIssue } from "../../../../../lib/types";
+import { requireApiAuth } from "../../../../../lib/require-api-auth";
 
 const taskSchema = z.object({
   client_id: z.string().regex(/^C\d+$/u),
@@ -46,6 +47,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ runId: string }> }
 ) {
+  const authError = await requireApiAuth();
+  if (authError) return authError;
   const { runId } = await params;
   let runExists = false;
   let saving = false;
